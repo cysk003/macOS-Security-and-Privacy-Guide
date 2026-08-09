@@ -270,6 +270,9 @@ When Lockdown Mode is enabled, Safari has an option to [exclude trusted websites
 
 There are several types of firewalls available for macOS.
 
+> [!NOTE]
+> If malware gains full administrator control, it may disable or bypass firewall policies; do not rely on a local firewall as strong protection against a full system compromise.
+
 ## Application layer firewall
 
 The built-in firewall provides basic protection and blocks incoming connections only. It can neither monitor nor block outgoing connections.
@@ -336,7 +339,7 @@ Applications such as [Little Snitch](https://www.obdev.at/products/littlesnitch/
 
 These programs are capable of monitoring and blocking both incoming and outgoing connections. However, they may require a closed-source [system extension](https://support.apple.com/HT210999).
 
-If frequent allow-or-block prompts are overwhelming, begin with Silent Mode configured to allow connections. Review the configuration periodically to understand each application's network activity.
+If frequent allow-or-block prompts are overwhelming, temporarily allow connections while also recording them (["Silent Allow" mode](https://help.obdev.at/littlesnitch6/concepts-opmodes) in Little Snitch). Review the configuration to understand and control network activity.
 
 ## Packet filter
 
@@ -451,7 +454,7 @@ IP 192.168.1.1.62771 > 157.240.2.35.443: tcp 0
 IP 192.168.1.1.62771 > 157.240.2.35.443: tcp 0
 ```
 
-The firewall drops the outbound [SYN packets](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Connection_establishment), so the TCP connection cannot be established.
+The firewall drops the initial packets needed to start the [TCP connection](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Connection_establishment), so the connection times out.
 
 See [drduh/config/scripts/pf-blocklist.sh](https://github.com/drduh/config/blob/main/scripts/pf-blocklist.sh) for more inspiration.
 
@@ -490,7 +493,7 @@ See [script management with launchd](https://support.apple.com/guide/terminal/sc
 
 # Siri Suggestions and Spotlight
 
-Apple is moving many Siri functions to on-device processing, but using Siri Suggestions or Spotlight may still send some information to Apple. See Apple's [Privacy Policy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) to see exactly what is sent and how to disable it.
+Siri Suggestions and Spotlight may send some queries or usage information to Apple, depending on the enabled features. In System Settings, search for Siri and Spotlight, then disable online suggestions and configure categories to exclude from indexing or suggestion. See Apple's [Search & Privacy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) policy for more information.
 
 # Homebrew
 

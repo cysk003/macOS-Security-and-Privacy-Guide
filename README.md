@@ -1,10 +1,8 @@
 This guide is a collection of techniques for improving the security and privacy of macOS on [Apple silicon](https://support.apple.com/116943) Macs. It targets experienced users who want security practices commonly used by organizations, but is also suitable for novice users with an interest in privacy and security.
 
-For securing computers in an organization, refer to the [security guidelines from NIST](https://github.com/usnistgov/macos_security), a U.S. government cybersecurity standards [organization](https://en.wikipedia.org/wiki/National_Institute_of_Standards_and_Technology)
+For organization-managed Macs, see the [macOS Security Compliance Project](https://github.com/usnistgov/macos_security), maintained by the [U.S. National Institute of Standards and Technology](https://en.wikipedia.org/wiki/National_Institute_of_Standards_and_Technology).
 
 This guide is provided "as is" - without warranties of any kind. You are solely responsible for any consequences of following it.
-
-To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Security-and-Privacy-Guide/pulls) or open an [issue](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues).
 
 - [Basics](#basics)
 - [Threat modeling](#threat-modeling)
@@ -12,6 +10,7 @@ To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Secu
   - [Adversaries](#adversaries)
   - [Capabilities](#capabilities)
   - [Mitigations](#mitigations)
+  - [Example model](#example-model)
 - [Hardware](#hardware)
 - [Installing macOS](#installing-macos)
   - [System activation](#system-activation)
@@ -76,13 +75,15 @@ To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Secu
 - [Related software](#related-software)
 - [Additional resources](#additional-resources)
 
+---
+
 # Basics
 
 Apply general security best practices:
 
 - Create a [threat model](#threat-modeling)
-  - What needs protection and from whom? Is the adversary a three-letter agency, an eavesdropper on a network, or a determined [Advanced Persistent Threat (APT)](https://en.wikipedia.org/wiki/Advanced_persistent_threat) orchestrating a campaign against you?
-  - Recognize threats and learn how to reduce the number of ways an attacker could potentially access a system or data.
+  - Is your adversary a local eavesdropper, a criminal using common malware, or a well-funded and highly capable organization?
+  - Define the threats or groups you are defending against and what they can realistically do.
 
 - Keep the system and software up to date
   - Regularly install available updates for the operating system and all applications.
@@ -90,12 +91,13 @@ Apply general security best practices:
   - Subscribe to the [Apple security-announce](https://lists.apple.com/archives/list/security-announce@lists.apple.com/) mailing list or check [Apple security releases](https://support.apple.com/100100).
 
 - Encrypt sensitive data
-  - In addition to [FileVault](https://support.apple.com/guide/mac-help/protect-data-on-your-mac-with-filevault-mh11785) storage encryption, use the [built-in password manager](https://support.apple.com/105115) to protect passwords and other sensitive data.
+  - Enable [FileVault](https://support.apple.com/guide/mac-help/protect-data-on-your-mac-with-filevault-mh11785) to encrypt internal storage.
+  - Use a [password manager](https://support.apple.com/105115) for account credentials and consider encrypting especially sensitive files separately.
 
 - Ensure data availability
   - Create [regular backups](https://support.apple.com/104984) of critical data and be ready to [restore from a backup](https://support.apple.com/102551) in case of compromise.
-  - [Encrypt locally](https://support.apple.com/guide/mac-help/keep-your-time-machine-backup-disk-secure-mh21241) before copying backups to unencrypted external media or the "cloud"; alternatively, enable [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f).
-  - Verify backups by accessing them on a scheduled basis.
+  - [Encrypt backups](https://support.apple.com/guide/mac-help/keep-your-time-machine-backup-disk-secure-mh21241) before copying them to external media or third-party cloud storage. Alternatively, use a backup service that provides [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f).
+  - Verify backups by accessing them on a regular, scheduled basis.
 
 - Click carefully
   - Ultimately, the security of a system depends on the capabilities and habits of its administrator.
@@ -103,7 +105,7 @@ Apply general security best practices:
 
 # Threat modeling
 
-The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling). This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses. Each individual should develop their own unique threat model. Threat models are likely to change over time and should be periodically re-assessed.
+The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling): a general description of what you want to protect, who might try to access it, how they could do so, and which controls are worth usability trade-offs. This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses.
 
 ## Assets
 
@@ -117,15 +119,17 @@ Define whom you are defending against. Start by defining the motivation each adv
 
 ## Capabilities
 
-To counter adversaries, understand both their capabilities and limitations. Rank them from least to most capable. For example, a common thief operates opportunistically: they will likely be defeated by the basics, such as screen lock and encrypted storage with strong passwords. A more sophisticated and determined adversary may require fully powering off a device when not in use to clear credentials from memory and stronger authentication mechanisms.
+For each adversary, list what they can and cannot do, ranking them from least to most capable. For example, a casual thief operates opportunistically: they will likely be defeated by basic controls, such as screen lock and encrypted storage with strong passwords. A more sophisticated and determined adversary may require fully powering off a device when not in use to clear credentials from memory and stronger authentication mechanisms.
 
 ## Mitigations
 
 Choose the best mitigation for each threat. For example, avoid writing passwords on paper if a roommate might find them, or encrypt storage to protect its data if it is stolen.
 
-Security should be balanced with usability: every mitigation should counter some adversarial capability to justify any inconvenience. If you can't think of any more capabilities your adversaries might have and you've implemented mitigations for them all, your work is done.
+Security should be balanced with usability: every mitigation should counter some adversarial capability to justify any inconvenience. Stop adding defenses when the remaining risks are acceptable for a situation. Revisit the model when devices, data, travel, work, or adversaries change.
 
-The following is an example of assets to protect:
+## Example model
+
+The following table is an example of a simple threat model:
 
 Adversary | Motivation | Capabilities | Mitigation
 :-: | :-: | :-: | :-:
@@ -139,14 +143,13 @@ Read more about [threat modeling](https://www.netmeister.org/blog/threat-model-1
 
 # Hardware
 
-> [!IMPORTANT]
-> Macs with Intel CPUs have [security vulnerabilities](https://github.com/axi0mX/ipwndfu?tab%253Dreadme-ov-file#checkm8) on a hardware level which cannot be patched.
+[Apple silicon hardware](https://support.apple.com/guide/security/hardware-security-overview-secf020d1074/1/web/1) provide hardware-backed security features, including Secure Enclave-based key protection and stronger boot security options. They are generally the preferred platform for the protections discussed in this guide.
 
-macOS is most secure when running on [Apple silicon hardware](https://support.apple.com/guide/security/hardware-security-overview-secf020d1074/1/web/1). In general, newer models offer stronger security guarantees. Avoid non-Apple hardware running macOS and systems that do not support the latest macOS release, as Apple does not [patch all vulnerabilities](https://support.apple.com/guide/deployment/about-software-updates-depc4c80847a) in legacy versions.
+Some Intel-based Macs, especially models with vulnerable [T2-era hardware](https://en.wikipedia.org/wiki/Apple_T2), are affected by hardware vulnerabilities that cannot be fully fixed by a macOS update.
+
+Avoid non-Apple hardware running macOS and systems that do not support the latest macOS release, as Apple does not [patch all vulnerabilities](https://support.apple.com/guide/deployment/about-software-updates-depc4c80847a) in legacy versions.
 
 Apple accessories generally receive firmware updates through macOS and support current [Bluetooth security features](https://support.apple.com/guide/security/bluetooth-security-sec82597d97e/web). For example, [Bluetooth Low Energy](https://en.wikipedia.org/wiki/Bluetooth_Low_Energy) (BLE) Privacy uses rotating device addresses to reduce tracking; third-party accessories may not support this feature.
-
-When purchasing a Mac, consider paying in cash rather than ordering online or purchasing with a credit/debit card, to limit identifying information linked to the purchase.
 
 # Installing macOS
 
@@ -156,15 +159,13 @@ Install the latest supported version of macOS; newer versions of macOS include s
 
 ## System activation
 
-As part of Apple's [theft prevention system](https://support.apple.com/102541), Apple silicon Macs connect to Apple servers when macOS is installed to check against the database of lost or stolen systems.
-
-Read about [how this process works](https://support.apple.com/guide/security/localpolicy-signing-key-creation-management-sec1f90fbad1).
+During installation, Apple silicon Macs contact Apple activation service to confirm that the device is not reported [lost or stolen](https://support.apple.com/102541). Read about [how this process works](https://support.apple.com/guide/security/localpolicy-signing-key-creation-management-sec1f90fbad1).
 
 ## Apple Account
 
-An [Apple Account](https://www.apple.com/legal/privacy/data/en/apple-id/) is not required to use macOS, but it is necessary to access the App Store and most Apple services, including iCloud and Apple Music.
+An [Apple Account](https://www.apple.com/legal/privacy/data/en/apple-id/) is optional for basic macOS use but required for the App Store and many Apple services. Review [data privacy settings](https://support.apple.com/102651) before enabling features.
 
-You can later [disable synchronization](https://support.apple.com/102651), [enable end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f/web) for eligible iCloud data, [manage Apple Account data](https://support.apple.com/102283), or delete the account.
+Enable [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f/web) for iCloud and review [Apple Account data](https://support.apple.com/102283).
 
 ## App Store
 
@@ -176,7 +177,7 @@ Using the App Store requires an Apple Account, which can pose a privacy risk.
 
 ## Virtualization
 
-On Apple silicon, macOS includes Apple's [Virtualization framework](https://developer.apple.com/documentation/virtualization), which supports macOS and Windows 11 ARM virtual machines through tools such as:
+Virtualization enables another operating system to run in an isolated virtual machine. On [Apple silicon](https://developer.apple.com/documentation/virtualization), macOS can run supported macOS guests and Windows 11 for ARM using apps such as the following:
 
 - [UTM](https://mac.getutm.app/) - Follow the [documentation](https://docs.getutm.app/guest-support/macos) to create macOS and other virtual machines.
 - [VirtualBuddy](https://github.com/insidegui/VirtualBuddy) - Application for virtualizing macOS 12+ on Apple silicon.
@@ -191,13 +192,13 @@ On Apple silicon, macOS includes Apple's [Virtualization framework](https://deve
 
 ### Apple containers
 
-[Apple Container](https://github.com/apple/container) provides a native command-line workflow for running Linux container images on macOS. Unlike container runtimes that share a single Linux virtual machine, Apple Container runs each container in an isolated, lightweight virtual machine using macOS virtualization capabilities. This provides a stronger isolation boundary between workloads and the host operating system.
+[Apple Container](https://github.com/apple/container) is a command-line tool for running Linux containers on macOS. Unlike container runtimes that share a single Linux virtual machine, Apple Container runs each container in an isolated, lightweight virtual machine using macOS virtualization capabilities. This provides a stronger isolation boundary between workloads and the host operating system.
 
 # First boot
 
 When macOS starts for the first time, **Setup Assistant** requires the creation of a primary account.
 
-Set a [strong password](https://www.eff.org/dice) without a hint.
+Set a [long and unique password](https://www.eff.org/dice). Leave the password hint field blank.
 
 Avoid personally identifiable names: the computer name (such as "John Appleseed's MacBook") is broadcast over local networks and visible to other devices.
 
@@ -211,7 +212,7 @@ sudo scutil --set LocalHostName MacBook
 
 # Admin and user accounts
 
-The first user account created is always an administrator account. Administrator accounts belong to the admin group and can use [sudo](https://en.wikipedia.org/wiki/Sudo) (a command that grants temporary administrator access) to run commands with elevated privileges, up to and including root (full system) control. Any program the administrator executes can potentially obtain the same access, and sudo may have vulnerabilities [exploited](https://bogner.sh/2014/03/another-mac-os-x-sudo-password-bypass/) by concurrently-running software.
+The first account created is an administrator account. Administrators can change system-wide settings and run commands with [sudo](https://en.wikipedia.org/wiki/Sudo), which temporarily grants elevated privileges. Any program the administrator runs could obtain the same access; sudo may also have [vulnerabilities](https://bogner.sh/2014/03/another-mac-os-x-sudo-password-bypass/).
 
 It is considered a [best practice](https://help.apple.com/machelp/mac/10.12/index.html#/mh11389) to use a dedicated standard account for regular, daily work and only use the administrator account for software and system installation, configuration and updates.
 
@@ -1421,7 +1422,7 @@ List the contents of various network-related data structures:
 sudo netstat -atln
 ```
 
-[Wireshark](https://www.wireshark.org/) can be used from the command line with `tshark`.
+[Wireshark](https://www.wireshark.org/) can be used from the command line with [`tshark`](https://www.wireshark.org/docs/man-pages/tshark.html).
 
 Monitor DNS:
 

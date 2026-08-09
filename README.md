@@ -493,16 +493,16 @@ See [script management with launchd](https://support.apple.com/guide/terminal/sc
 
 # Siri Suggestions and Spotlight
 
-Siri Suggestions and Spotlight may send some queries or usage information to Apple, depending on the enabled features. In System Settings, search for Siri and Spotlight, then disable online suggestions and configure categories to exclude from indexing or suggestion. See Apple's [Search & Privacy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) policy for more information.
+Siri Suggestions and Spotlight may send some queries or usage information to Apple, depending on the enabled features. In System Settings, search for Siri and Spotlight, then disable online suggestions and configure categories to exclude from indexing or suggestion. Review Apple's [Search & Privacy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) policy for more information.
 
 # Homebrew
 
 If a program is not available through the App Store, consider using [Homebrew](https://brew.sh/).
 
 > [!IMPORTANT]
-> Some Homebrew installation or management workflows may prompt for App Management or [Full Disk Access](https://eclecticlight.co/2025/11/08/explainer-permissions-privacy-and-tcc/). Grant these permissions only when necessary: they can substantially expand the access available to commands run through Terminal.
+> Some Homebrew installation or management workflows may prompt for App Management or [Full Disk Access](https://eclecticlight.co/2025/11/08/explainer-permissions-privacy-and-tcc/). Grant these permissions only when they are fully understood and necessary.
 
-Remember to periodically run `brew upgrade` on trusted and secure networks to download and install software updates. To get information on a package before installation, run `brew info <package>` and check its formula online. You may also wish to enable [additional security options](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/138), such as `HOMEBREW_NO_INSECURE_REDIRECT=1`
+Periodically run `brew upgrade` on trusted and secure networks to install software updates. To get information on a package before installation, run `brew info <package>` and review its formula online. Enable [additional security options](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/138), such as `HOMEBREW_NO_INSECURE_REDIRECT=1`
 
 According to [Homebrew's Anonymous Analytics](https://docs.brew.sh/Analytics), Homebrew collects anonymous usage analytics and reports them to a self-hosted [InfluxDB](https://en.wikipedia.org/wiki/InfluxDB) instance.
 
@@ -770,11 +770,11 @@ Web browsers create significant security and privacy risks because they download
 
 A key browser security boundary is the [same-origin policy](https://en.wikipedia.org/wiki/Same-origin_policy) (SOP), which prevents one website from reading another website's data. A bypass can expose data or actions from other sites in the same browser profile.
 
-Some browser exploits rely on social engineering to gain persistence (ability to remain active after the initial attack). Be mindful when visiting untrusted sites and especially careful when downloading unrecognized software.
+Some browser attacks rely on convincing the user to install software, grant permissions, or use a malicious extension. Be especially careful with unexpected downloads, extension prompts, and requests to run commands in Terminal.
 
 Browser extensions also pose a significant security risk: a malicious or poorly-made extension can compromise everything in the browser, including credentials. The use of browser extensions should be limited to critically necessary ones, published by trustworthy developers only.
 
-Use separate browser profiles to compartmentalize identities, cookies, and site data. If practical, disable JavaScript and only allow it on trusted sites using browser site permissions.
+Use separate browser profiles for different identities and purposes. If practical, disable JavaScript and only allow it on trusted sites using browser site permissions.
 
 [Mozilla Firefox](https://www.firefox.com/), [Google Chrome](https://www.google.com/chrome), [Safari](https://www.apple.com/safari), and [Tor Browser](https://www.torproject.org/download) are popular browsers, each with unique features and individual purposes.
 
@@ -784,7 +784,7 @@ Firefox modernized major parts of its codebase through the [Quantum](https://wik
 
 Firefox offers a comparable security model to Chrome, including a [bug bounty program](https://www.mozilla.org/security/bug-bounty/) for responsible disclosure of vulnerabilities. Firefox follows a four-week release cycle.
 
-See [drduh/config/firefox.user.js](https://github.com/drduh/config/blob/main/firefox.user.js) and [arkenfox/user.js](https://github.com/arkenfox/user.js) for recommended configurations for Firefox. Also see [NoScript](https://noscript.net/), an extension which allows selective script blocking.
+See [drduh/config/firefox.user.js](https://github.com/drduh/config/blob/main/firefox.user.js) and [arkenfox/user.js](https://github.com/arkenfox/user.js) for recommended configurations. Also see [NoScript](https://noscript.net/), an extension which allows selective script blocking.
 
 Firefox [focuses on user privacy](https://www.mozilla.org/firefox/privacy). It supports [tracking protection](https://developer.mozilla.org/docs/Web/Privacy/Firefox_tracking_protection) in Private Browsing mode. The tracking protection can be enabled for the default account, although it may break the browsing experience on some websites. Firefox in Strict tracking protection mode will [randomize fingerprints](https://support.mozilla.org/kb/firefox-protection-against-fingerprinting) to defend against tracking. Firefox offers separate user [profiles](https://support.mozilla.org/kb/profile-manager-create-remove-switch-firefox-profiles). Browsing can also be delineated with [Multi-Account Containers](https://support.mozilla.org/kb/containers).
 
@@ -792,18 +792,9 @@ Firefox only supports Web Extensions through the [WebExtension API](https://deve
 
 ## Chrome
 
-[Google Chrome](https://www.google.com/chrome/) is based on the open-source [Chromium project](https://www.chromium.org/) with certain [proprietary components](https://fossbytes.com/difference-google-chrome-vs-chromium-browser), such as:
-
-- [Chrome Web Store](https://chromewebstore.google.com/)
-- Automatic updates with GoogleSoftwareUpdateDaemon
-- Usage tracking and crash reporting, which can be disabled through Chrome's settings
-- Media Codec support for proprietary codecs
-- PDF viewer
-- Non-optional tracking. Google Chrome installer includes a randomly generated token, which is sent to Google. The RLZ identifier stores information in the form of encoded strings, such as the source of the download and install time. It does not include personal information and it's used to measure the effectiveness of a promotional campaign. **Chrome downloaded from Google's website doesn't have the RLZ identifier**. The source code to decode the strings is made open by Google.
+[Google Chrome](https://www.google.com/chrome/) is based on the open-source [Chromium project](https://www.chromium.org/). Chrome includes some proprietary components, automatic updates, a PDF viewer, media-codec support, crash reporting, and Google account integration. Review Chrome privacy settings and Google privacy policies for more information.
 
 Chrome offers account sync between multiple devices, including credentials; the data is encrypted with the account password.
-
-The Chrome Web Store requires a [5 USD registration fee](https://developer.chrome.com/docs/webstore/register) to submit extensions. This allows development of open-source Web Extensions which do not aim to monetize through usage.
 
 Chrome has the largest share of global usage and is the preferred target platform for the majority of developers. Major technologies are based on Chrome's open-source components, such as [node.js](https://nodejs.org/) which uses [Chrome's V8](https://developers.google.com/v8) Engine and the [Electron](https://electron.atom.io/) framework, which is based on Chromium and node.js. Chrome's vast user base makes it the most attractive target for threat actors and security researchers. Despite constant attacks, Chrome has retained an impressive security track record over the years. This is not a small feat.
 
@@ -819,11 +810,11 @@ See [Chromium Security](https://www.chromium.org/Home/chromium-security) and [Ch
 
 ## Safari
 
-[Safari](https://www.apple.com/safari) is the default browser on macOS. It is also the most optimized browser for reducing battery use. Safari has both open-source and proprietary components. Safari is based on the open-source Web Engine [WebKit](https://webkit.org/), which is ubiquitous among the macOS ecosystem. WebKit is used by Apple apps such as Mail, Books, and the App Store. Chrome's [Blink](https://www.chromium.org/blink) engine is a fork of WebKit and both engines share a number of similarities.
+[Safari](https://www.apple.com/safari) is Apple's built-in browser and is integrated with macOS, providing battery efficiency improvements on Apple hardware.
+
+Safari has both open-source and proprietary components. Safari is based on the open-source Web Engine [WebKit](https://webkit.org/), which is ubiquitous among the macOS ecosystem. WebKit is used by Apple apps such as Mail, Books, and the App Store. Chrome's [Blink](https://www.chromium.org/blink) engine is a fork of WebKit and both engines share a number of similarities.
 
 Safari supports certain unique features that benefit user security and privacy. [Content blockers](https://webkit.org/blog/3476/content-blockers-first-look) enable the creation of content blocking rules without using JavaScript. This rule based approach greatly improves memory use, security, and privacy. Safari 11 introduced [Intelligent Tracking Prevention](https://webkit.org/blog/7675/intelligent-tracking-prevention), which removes tracking data stored in Safari after a period of non-interaction by the user from the tracker's website. Safari can randomize the browser fingerprint to reduce tracking. Safari does not support certain features such as WebUSB or the Battery API intentionally for security and privacy reasons. Private tabs in Safari have isolated cookies and cache that is destroyed when you close the tab. Safari also support Profiles which are equivalent to Firefox's Multi-Account Containers for separating cookies and browsing. Safari can be made significantly more secure with [lockdown mode](#lockdown-mode), which can be disabled per-site. Read more about [tracking prevention](https://webkit.org/tracking-prevention/) in Safari.
-
-Safari offers an invite-only [bounty program](https://developer.apple.com/bug-reporting) for bug reporting to a select number of security researchers. The bounty program was announced during Apple's [presentation](https://www.blackhat.com/docs/us-16/materials/us-16-Krstic.pdf) at [BlackHat](https://www.blackhat.com/us-16/briefings.html#behind-the-scenes-of-ios-security) 2016.
 
 Web Extensions in Safari have an additional option to use native code in Safari's sandbox environment, in addition to Web Extension APIs. Web Extensions in Safari are also distributed through Apple App Store. App Store submission comes with the added benefit of Web Extension code being audited by Apple. On the other hand App Store submission comes at a steep cost. Yearly [developer subscription](https://developer.apple.com/support/compare-memberships) fee costs 100 USD (in contrast to Chrome's 5 USD fee and Firefox's free submission). The high cost is prohibitive for the majority of open-source developers. As a result, Safari has very few extensions to choose from. However, keep the high cost in mind when installing extensions. It is expected that most Web Extensions will have some way of monetizing usage to cover development costs. Avoid Web Extensions without open-source code available for review.
 
@@ -835,7 +826,7 @@ See also [el1t/uBlock-Safari](https://github.com/el1t/uBlock-Safari/wiki/Disable
 
 ## Web browser privacy
 
-Web browsers reveal information in several ways, for example through the [Navigator](https://developer.mozilla.org/docs/Web/API/Navigator) interface, which may include information such as the browser version, operating system, site permissions, and the device battery level. Many websites also use [canvas fingerprinting](https://en.wikipedia.org/wiki/Canvas_fingerprinting) to uniquely identify users across sessions.
+Websites infer information about the [browser and device](https://developer.mozilla.org/docs/Web/API/Navigator) from settings, fonts, screen size, language, IP address, and browser behavior. This information contributes to [browser fingerprinting](https://en.wikipedia.org/wiki/Device_fingerprint).
 
 For more information about security-conscious browsing and what data is sent by the browser, see [HowTo: Privacy & Security Conscious Browsing](https://gist.github.com/atcuno/3425484ac5cce5298932), [browserleaks.com](https://browserleaks.com/), [Am I Unique?](https://amiunique.org/fingerprint) and [EFF Cover Your Tracks](https://coveryourtracks.eff.org/) resources.
 
@@ -965,7 +956,7 @@ $ openssl x509 -inform der -in codesign0 -fingerprint -noout
 SHA256 Fingerprint=76:3C:89:02:ED:CB:AD:8E:59:86:1E:93:D3:05:5B:28:F9:04:0C:96:03:8B:16:28:9F:38:64:ED:53:45:B4:DA
 ```
 
-Tor traffic can be obfuscated using a [pluggable transport](https://support.torproject.org/tor-browser/circumvention/). This can be done by setting up a [relay](https://support.torproject.org/relays/) or using an existing [bridge](https://bridges.torproject.org/).
+Tor Browser can use special connection methods called [pluggable transports](https://support.torproject.org/tor-browser/circumvention/) to make traffic harder to identify or block. This can be done by setting up a [relay](https://support.torproject.org/relays/) or using an existing [bridge](https://bridges.torproject.org/).
 
 The Tor network provides [anonymity](https://www.privateinternetaccess.com/blog/2013/10/how-does-privacy-differ-from-anonymity-and-why-are-both-important/), which is not necessarily the same as privacy. The network does not defend against a global observer capable of traffic analysis and correlation. See also [Seeking Anonymity in an Internet Panopticon](https://bford.info/pub/net/panopticon-cacm.pdf) and [Traffic Correlation on Tor by Realistic Adversaries](https://www.ohmygodel.com/publications/usersrouted-ccs13.pdf).
 
@@ -991,7 +982,7 @@ PGP is a standard for encrypting and signing data, especially email. It can prot
 
 GPG (GNU Privacy Guard) is a GPL-licensed, open-source program compliant with the PGP standard. It can verify software signatures and encrypt files [symmetrically](https://en.wikipedia.org/wiki/Symmetric-key_algorithm) or using [public keys](https://en.wikipedia.org/wiki/Public-key_cryptography).
 
-Install from Homebrew with `brew install gnupg` or using [GPG Suite](https://gpgtools.org/).
+Install GnuPG with Homebrew (`brew install gnupg`) or install [GPG Suite](https://gpgtools.org/).
 
 Download [gpg.conf](https://github.com/drduh/YubiKey-Guide/blob/main/config/gpg.conf) to use recommended settings:
 
@@ -1008,7 +999,7 @@ Email is not designed to provide strong privacy by default: message content may 
 
 ## Thunderbird
 
-[Thunderbird](https://www.thunderbird.net/) is a free and open-source email client with standard [IMAP](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol), [POP](https://en.wikipedia.org/wiki/Post_Office_Protocol), [CalDAV](https://en.wikipedia.org/wiki/CalDAV), and [CardDAV](https://en.wikipedia.org/wiki/CardDAV) support. It is a suitable choice for accessing and retaining mail locally rather than depend exclusively on a provider's remote server.
+[Thunderbird](https://www.thunderbird.net/) is a free and open-source email client with standard [IMAP](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol), [POP](https://en.wikipedia.org/wiki/Post_Office_Protocol), [CalDAV](https://en.wikipedia.org/wiki/CalDAV), and [CardDAV](https://en.wikipedia.org/wiki/CardDAV) support. It is a suitable choice for accessing mail and retaining local copies rather than depending exclusively on a provider's remote server.
 
 Thunderbird includes support for [OpenPGP](https://support.mozilla.org/kb/openpgp-thunderbird-howto-and-faq) email encryption, which can protect message content and provide cryptographic [signatures](https://www.gnupg.org/gph/en/manual/x135.html). Always verify public-key fingerprints through an independent channel before relying on a key for sensitive communication.
 
@@ -1029,6 +1020,8 @@ XMPP is not end-to-end encrypted (E2EE) by default; use [OMEMO](https://omemo.to
 [Signal](https://signal.org/) is a popular E2EE messenger whose [double-ratchet](https://signal.org/docs/specifications/doubleratchet/) protocol is used by many other applications including WhatsApp, Google Messages, and Facebook Messenger.
 
 To use the Signal desktop app, Signal must first be installed on a phone.
+
+See EFF's [Signal guide](https://ssd.eff.org/module/how-to-use-signal) for additional guidance.
 
 ## iMessage
 
@@ -1103,7 +1096,7 @@ macOS includes built-in antivirus software called [XProtect](https://support.app
 
 Applications such as [BlockBlock](https://objective-see.com/products/blockblock.html) or [hazcod/maclaunch](https://github.com/hazcod/maclaunch) might help prevent or detect persistent malware.
 
-Antivirus software may act as a "double-edged sword": capable of countering common, "garden-variety" malware, but having potential to increase attack surface with system-level privileges. They may also send telemetry and malware samples, increasing privacy risk.
+Antivirus software can help detect common malware, but it may also increase attack surface because it often runs with extensive system privileges. Some products may also send telemetry or samples to the vendor.
 
 See [Sophail: Applied attacks against Antivirus](https://lock.cmpxchg8b.com/sophailv2.pdf), [Analysis and Exploitation of an ESET Vulnerability](https://googleprojectzero.blogspot.ro/2015/06/analysis-and-exploitation-of-eset.html), [Popular Security Software Came Under Relentless NSA and GCHQ Attacks](https://theintercept.com/2015/06/22/nsa-gchq-targeted-kaspersky/), and [How Israel Caught Russian Hackers Scouring the World for U.S. Secrets](https://www.nytimes.com/2017/10/10/technology/kaspersky-lab-israel-russia-hacking.html).
 
@@ -1214,9 +1207,9 @@ chflags -R uchg ~/Library/LanguageModeling ~/Library/Spelling ~/Library/Suggesti
 QuickLook application support metadata can be cleared and locked with the commands:
 
 ```bash
-rm -rfv "~/Library/Application Support/Quick Look/*"
-chmod -R 000 "~/Library/Application Support/Quick Look"
-chflags -R uchg "~/Library/Application Support/Quick Look"
+rm -rfv "$HOME/Library/Application Support/Quick Look/*"
+chmod -R 000 "$HOME/Library/Application Support/Quick Look"
+chflags -R uchg "$HOME/Library/Application Support/Quick Look"
 ```
 
 > [!WARNING]
@@ -1230,22 +1223,22 @@ sudo chmod -R 000 /.DocumentRevisions-V100
 sudo chflags -R uchg /.DocumentRevisions-V100
 ```
 
-Saved application state metadata may be cleared and locked with the commands:
+Saved application state metadata can be listed and locked with the commands:
 
 ```bash
-rm -rfv ~/Library/Saved\ Application\ State/*
-rm -rfv ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
+ls ~/Library/Saved\ Application\ State/*
+ls ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 chmod -R 000 ~/Library/Saved\ Application\ State/
 chmod -R 000 ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 chflags -R uchg ~/Library/Saved\ Application\ State/
 chflags -R uchg ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 ```
 
-Autosave metadata can be cleared and locked with the commands:
+Autosave metadata can be listed and locked with the commands:
 
 ```bash
-rm -rfv "~/Library/Containers/<APP>/Data/Library/Autosave Information"
-rm -rfv "~/Library/Autosave Information"
+ls "$HOME/Library/Containers/<APP>/Data/Library/Autosave Information"
+ls "$HOME/Library/Autosave Information"
 chmod -R 000 "~/Library/Containers/<APP>/Data/Library/Autosave Information"
 chmod -R 000 "~/Library/Autosave Information"
 chflags -R uchg "~/Library/Containers/<APP>/Data/Library/Autosave Information"
@@ -1276,15 +1269,15 @@ Additional metadata may exist in the following files:
 
 # Authentication
 
-The [Passwords](https://support.apple.com/guide/passwords/the-passwords-app-mchl901b1b95/mac) app creates [secure credentials](https://support.apple.com/guide/security/automatic-strong-passwords-secc84c811c4/web). It supports [passkeys](https://fidoalliance.org/passkeys/) - credentials which are more resilient to phishing.
+The [Passwords](https://support.apple.com/guide/passwords/the-passwords-app-mchl901b1b95/mac) app creates [secure credentials](https://support.apple.com/guide/security/automatic-strong-passwords-secc84c811c4/web). It supports [passkeys](https://fidoalliance.org/passkeys/), which are credentials designed to resist phishing when used with compatible services.
 
 [KeePassXC](https://keepassxc.org/) is an open-source, cross-platform password manager to consider. It supports strong authentication with compatible hardware tokens and a browser extension for entering credentials automatically.
 
 Memorable passwords can be created with [Diceware](https://secure.research.vt.edu/diceware/).
 
-Ensure online accounts have [multi-factor authentication](https://en.wikipedia.org/wiki/Multi-factor_authentication) enabled. The strongest form of multi-factor authentication is [WebAuthn](https://en.wikipedia.org/wiki/WebAuthn), followed by [TOTP](https://datatracker.ietf.org/doc/html/rfc6238)/[HOTP](https://datatracker.ietf.org/doc/html/rfc4226) (commonly implemented by authenticator apps); SMS-based codes are weakest since they rely on the service provider.
+Ensure online accounts have [multi-factor authentication](https://en.wikipedia.org/wiki/Multi-factor_authentication) enabled. Prefer phishing-resistant authentication, such as hardware tokens or passkeys with supported services. Authenticator apps are preferable to SMS codes, but any MFA is better than password-only authentication.
 
-[YubiKey](https://www.yubico.com/products/) is a popular authentication token. It can also store cryptographic keys for encryption and authentication - see [drduh/YubiKey-Guide](https://github.com/drduh/YubiKey-Guide).
+[YubiKey](https://www.yubico.com/products/) is a popular hardware authentication token. It can also store keys for encryption, signing and authentication tasks - see [drduh/YubiKey-Guide](https://github.com/drduh/YubiKey-Guide).
 
 GnuPG can also manage passwords and other encrypted files - see [drduh/Purse](https://github.com/drduh/Purse) and [drduh/pwd.sh](https://github.com/drduh/pwd.sh).
 
@@ -1292,7 +1285,7 @@ GnuPG can also manage passwords and other encrypted files - see [drduh/Purse](ht
 
 Encrypt files locally before backing them up to external media or online services.
 
-Follow the [3-2-1 backup model](https://www.cisa.gov/sites/default/files/publications/data_backup_options.pdf): keep 3 copies (original and two backups); keep backups on 2 different media types; store 1 backup copy remotely.
+Follow the [3-2-1 backup model](https://www.cisa.gov/sites/default/files/publications/data_backup_options.pdf): keep three copies of important data, store them on at least two different types of media, and keep at least one copy in a separate physical location.
 
 ## Time Machine
 
@@ -1332,7 +1325,7 @@ hdiutil eject /Volumes/secretStuff
 
 # Wi-Fi
 
-Wi-Fi networks continuously broadcast a **service set identifier (SSID)** which allows devices to passively scan for previously-connected networks. **Hidden** networks do not transmit an SSID and devices send a probe with the SSID to connect, which can reveal metadata. Avoid using [hidden networks](https://support.apple.com/guide/security/wi-fi-privacy-with-apple-devices-sec31e483abf/web#sec059998a98).
+Wi-Fi network names, called SSIDs, and device probe behavior can reveal information about nearby and previously-used networks. [Hidden networks](https://support.apple.com/guide/security/wi-fi-privacy-with-apple-devices-sec31e483abf/web#sec059998a98) do not provide meaningful privacy and can cause devices to actively probe for them.
 
 Set a [private Wi-Fi address](https://support.apple.com/guide/mac-help/use-a-private-wi-fi-address-on-mac-mchlb1cb3eb4/mac) to reduce network tracking.
 
@@ -1340,11 +1333,9 @@ Set wireless network security to [WPA3](https://en.wikipedia.org/wiki/WPA3#WPA3)
 
 # SSH
 
-For outgoing SSH connections, use hardware or password-protected keys, [set up](http://nerderati.com/2011/03/17/simplify-your-life-with-an-ssh-config-file/) remote hosts and consider [hashing](http://nms.csail.mit.edu/projects/ssh/) them for added privacy. See [drduh/config/ssh_config](https://github.com/drduh/config/blob/main/ssh_config) for recommended client options.
+For remote SSH connections, use a unique SSH key protected by a passphrase or a hardware token, verify server host keys, and avoid password-based authentication. See [drduh/config/ssh_config](https://github.com/drduh/config/blob/main/ssh_config) for recommended client options.
 
-An SSH tunnel can securely route traffic through another computer, similar to a VPN.
-
-To use Privoxy running on a remote host on port 8118:
+An SSH tunnel can securely route traffic through another computer, similar to a VPN. To use Privoxy running on a remote host on port 8118:
 
 ```bash
 ssh -C -L 5555:127.0.0.1:8118 you@remote-host.tld
@@ -1378,7 +1369,7 @@ sudo lsof -Pni TCP:22
 
 Do not leave the computer unattended in unsafe locations. A skilled attacker with unsupervised physical access could install a [hardware keylogger](https://trmm.net/Thunderstrike_31c3) to record keystrokes, including passwords. Using a Mac with a built-in keyboard or a bluetooth keyboard makes this more difficult as many off-the-shelf versions of this attack are designed to be plugged in between a USB keyboard and the computer.
 
-To protect against physical theft during use, use an anti-forensic tool such as [buskill/buskill-app](https://github.com/buskill/buskill-app) or [Lennolium/swiftGuard](https://github.com/Lennolium/swiftGuard) (updated usbkill, with graphical user interface). All respond to USB events and can immediately shut the computer down if the device is physically separated or an unauthorized device is connected.
+To reduce the consequences of theft while a Mac is in use, consider a theft-response tool such as [buskill/buskill-app](https://github.com/buskill/buskill-app) or [Lennolium/swiftGuard](https://github.com/Lennolium/swiftGuard).
 
 Consider purchasing a privacy screen/filter for use in public.
 
@@ -1430,6 +1421,11 @@ sudo netstat -atln
 ```
 
 [Wireshark](https://www.wireshark.org/) can be used from the command line with [`tshark`](https://www.wireshark.org/docs/man-pages/tshark.html).
+
+Replace `en0` with the active interface shown by `networksetup -listallhardwareports`.
+
+> [!IMPORTANT]
+> Capture traffic only on networks and systems you are authorized to monitor.
 
 Monitor DNS:
 
@@ -1487,13 +1483,11 @@ Use [QuickTime Player](https://en.wikipedia.org/wiki/Quicktime_player), the buil
 
 ## File handlers
 
-Manage [default file handlers](https://support.apple.com/guide/mac-help/choose-an-app-to-open-a-file-on-mac-mh35597) to reduce risk of opening dangerous types.
+Manage [default file handlers](https://support.apple.com/guide/mac-help/choose-an-app-to-open-a-file-on-mac-mh35597) to reduce risk of opening certain file types.
 
-Change the default application used to open shell script files.
+Change the default app for script files so that opening them displays their contents instead of executing them.
 
 In Finder, locate and select any .sh file, right-click on it and select Get Info or press <kbd>Command</kbd> + <kbd>I</kbd>. In the "Open with" section, select TextEdit from the dropdown menu. If it is not listed, select "Other..." and Applications > TextEdit.app. Select "Change All..." and confirm by selecting Continue.
-
-From then on, double-clicking any .sh file will open it in TextEdit instead of Terminal.
 
 ## Screensaver
 

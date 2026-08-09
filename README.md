@@ -27,8 +27,16 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
 - [Lockdown Mode](#lockdown-mode)
 - [Firewall](#firewall)
   - [Application layer firewall](#application-layer-firewall)
+    - [Stealth mode](#stealth-mode)
+    - [Signed apps](#signed-apps)
+    - [Reload firewall](#reload-firewall)
+    - [Get state](#get-state)
+    - [AirDrop](#airdrop)
   - [Third-party firewalls](#third-party-firewalls)
   - [Packet filter](#packet-filter)
+    - [Example pf config](#example-pf-config)
+    - [Firewall commands](#firewall-commands)
+    - [Block networks](#block-networks)
 - [Services](#services)
 - [Siri Suggestions and Spotlight](#siri-suggestions-and-spotlight)
 - [Homebrew](#homebrew)
@@ -254,7 +262,7 @@ fdesetup status
 
 # Lockdown Mode
 
-[Lockdown Mode](https://support.apple.com/105120) significantly reduces attack surface by disabling system and application features commonly exploited in targeted attacks.
+[Lockdown Mode](https://support.apple.com/105120) significantly reduces attack surface by disabling system and application features commonly exploited in sophisticated attacks.
 
 When Lockdown Mode is enabled, Safari has an option to [exclude trusted websites](https://ssd.eff.org/module/how-to-enable-lockdown-mode-on-iphone) from restrictions.
 
@@ -268,31 +276,35 @@ The built-in firewall provides basic protection and blocks incoming connections 
 
 It can be controlled by the **Firewall** tab of **Network** in **System Settings**, or with the following commands.
 
-Enable the firewall and Stealth Mode:
+Attackers frequently scan networks to identify systems to target. When [stealth mode](https://support.apple.com/guide/mac-help/use-stealth-mode-to-keep-your-mac-more-secure-mh17133/mac) is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
+
+### Stealth mode
+
+Enable the firewall and stealth mode:
 
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 ```
 
-Attackers scan networks to identify systems to target. When Stealth Mode is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
+### Signed apps
 
-Prevent built-in and downloaded software from automatically receiving incoming connections:
+By default, the firewall allows incoming connections for software signed by Apple or by an identified developer. Disabling these rules makes macOS ask before allowing an application to accept incoming connections:
 
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsigned off
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsignedapp off
 ```
 
-Applications signed by a valid certificate authority are automatically added to the list of allowed apps, rather than prompting the user to authorize them. Apps included in macOS are signed by Apple and are allowed to receive incoming connections when this setting is enabled.
+### Reload firewall
 
-If an unsigned app not listed in the firewall list is opened, a dialog appears with options to Allow or Deny connections. If allowed, macOS signs the application and adds it to the firewall list. If denied, macOS adds it to the list and denies incoming connections.
-
-After interacting with `socketfilterfw`, restart the process by sending a [SIGHUP](https://en.wikipedia.org/wiki/SIGHUP) signal:
+After changing settings with `socketfilterfw`, reload the firewall service to apply the new configuration:
 
 ```bash
 sudo pkill -HUP socketfilterfw
 ```
+
+### Get state
 
 Confirm firewall state:
 
@@ -326,9 +338,6 @@ These programs are capable of monitoring and blocking both incoming and outgoing
 
 If frequent allow-or-block prompts are overwhelming, begin with Silent Mode configured to allow connections. Review the configuration periodically to understand each application's network activity.
 
-> [!NOTE]
-> A root-level compromise can undermine host-based network controls, depending on the product and system configuration.
-
 ## Packet filter
 
 macOS also includes [pf](https://en.wikipedia.org/wiki/PF_(firewall)), a packet-filtering firewall configured from the command line. It is powerful but considerably more complex than the built-in application firewall.
@@ -336,6 +345,8 @@ macOS also includes [pf](https://en.wikipedia.org/wiki/PF_(firewall)), a packet-
 pf can also be controlled with a graphical application such as [Murus](https://www.murusfirewall.com/).
 
 Many [books](https://nostarch.com/book-of-pf-4e) and [guides](https://www.openbsd.org/faq/pf/) cover the pf firewall. The following example shows how to configure a basic policy.
+
+### Example pf config
 
 Add the following rules to a file named `pf.rules`:
 
@@ -376,6 +387,8 @@ pass out on $wifi proto udp from ($wifi) to any keep state
 pass out on $wifi proto icmp from ($wifi) to any keep state
 ```
 
+### Firewall commands
+
 To control the firewall:
 
 Command | Task
@@ -394,7 +407,9 @@ Command | Task
 `sudo ifconfig pflog0 create` | create packet log interface
 `sudo tcpdump -ni pflog0` | monitor blocked packets
 
-pf can block access to ranges of network addresses, for example to an entire organization. Query [Merit RADb](https://www.radb.net/) for the list of networks in use by an [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) (a large network operated by a single organization), such as [Facebook](https://ipinfo.io/AS32934):
+### Block networks
+
+pf can block ranges of network addresses, for example to an entire organization. Query [Merit RADb](https://www.radb.net/) for the list of networks in use by an [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) (a large network operated by a single organization), such as [Facebook](https://ipinfo.io/AS32934):
 
 ```bash
 whois -h whois.radb.net '!gAS32934'

@@ -220,28 +220,17 @@ It is not required to ever log in with the admin account via the macOS login scr
 
 ## Caveats
 
-- Only administrators can install applications in the system-wide `/Applications` directory. Finder and Installer will prompt a standard user with a password prompt asking an administrator to approve the change. Many applications can be installed in `~/Applications` instead. As a rule of thumb, applications which do not require admin access – or do not complain about not being installed in `/Applications` – should be installed in the user directory, the rest in the local directory. App Store applications are still installed in `/Applications` and require no additional authentication.
+- Only administrators can install applications in the system-wide `/Applications` directory. Finder and Installer ask a standard user to enter an administrator's credentials when approval is required. Some applications can instead be installed in `~/Applications`; applications which do not require admin access should be installed in the user directory. App Store applications are still installed in `/Applications` and require no additional authentication.
 - A standard user usually is not authorized to use `sudo`. When administrator privileges are required, macOS prompts for an administrator's credentials, or the task can be run from an administrator account.
 - System Settings and several system utilities (e.g., Wi-Fi Diagnostics) require administrator permission for full functionality. Some System Settings need to be unlocked by selecting the lock icon. Some applications will simply prompt for authentication upon opening, others must be opened by an admin account directly to access all functions (e.g., Console).
-- There are third-party applications that will not work correctly because they assume the user account is an admin. These programs may have to be executed by the admin account, or using the `open` utility.
+- Some third-party applications assume the current user is an administrator and will not work from a standard account.
 - See [issue 167](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/167) for additional considerations.
 
 ## Setup
 
-Accounts can be created and managed in System Settings. On existing systems, it is generally easier to create a second admin account and then change the original account from an administrator account to a standard account.  Newly-installed systems should instead add a standard account after setup.
+Accounts be created and managed in System Settings. On existing systems, it is generally easier to create a second admin account and then change the original account from an administrator account to a standard account. Newly-installed systems should instead add a standard account after setup.
 
-Demoting an account can be done either from the new admin account in System Settings – the other account must be logged out – or by executing these commands (it may not be necessary to execute both, see [issue 179](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/179)):
-
-```bash
-sudo dscl . -delete /Groups/admin GroupMembership <username>
-sudo dscl . -delete /Groups/admin GroupMembers <GeneratedUID>
-```
-
-To obtain an account's **GeneratedUID**:
-
-```bash
-dscl . -read /Users/<username> GeneratedUID
-```
+Demoting an account can be done from the new admin account in System Settings.
 
 See also [this post](https://superuser.com/a/395738) for more information about how macOS determines group membership.
 

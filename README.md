@@ -271,7 +271,7 @@ When Lockdown Mode is enabled, Safari has an option to [exclude trusted websites
 There are several types of firewalls available for macOS.
 
 > [!NOTE]
-> If malware gains full administrator control, it may disable or bypass firewall policies; do not rely on a local firewall as strong protection against a full system compromise.
+> If malware gains administrator control, it may disable or bypass firewall policies; do not rely on a local firewall as strong protection against a full system compromise.
 
 ## Application layer firewall
 
@@ -339,7 +339,7 @@ Applications such as [Little Snitch](https://www.obdev.at/products/littlesnitch/
 
 These programs are capable of monitoring and blocking both incoming and outgoing connections. However, they may require a closed-source [system extension](https://support.apple.com/HT210999).
 
-If frequent allow-or-block prompts are overwhelming, temporarily allow connections while also recording them (["Silent Allow" mode](https://help.obdev.at/littlesnitch6/concepts-opmodes) in Little Snitch). Review the configuration to understand and control network activity.
+If frequent allow-or-block prompts are overwhelming, temporarily allow connections while also recording them ([Silent Allow mode](https://help.obdev.at/littlesnitch6/concepts-opmodes) in Little Snitch). Review the configuration to understand and control network activity.
 
 ## Packet filter
 
@@ -541,7 +541,8 @@ Popular hosts lists include:
 To download and append a list to the hosts file, use the [tee](https://man7.org/linux/man-pages/man1/tee.1.html) command:
 
 ```bash
-curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts | sudo tee -a /etc/hosts
+curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts |
+  sudo tee -a /etc/hosts
 ```
 
 [Little Snitch](#third-party-firewalls) also supports [blocklists](https://help.obdev.at/littlesnitch6/lsc-blocklists).
@@ -1544,7 +1545,8 @@ Enable [secure keyboard entry](https://support.apple.com/guide/terminal/use-secu
 Disable [Bonjour multicast advertisements](https://www.tenable.com/audits/items/CIS_Apple_macOS_10.13_v1.1.0_Level_2.audit:d9dcee7e4d2b8d2ee54f437158992d88) (this also disables AirPlay and AirPrint features):
 
 ```bash
-sudo defaults write /Library/Preferences/com.apple.mDNSResponder NoMulticastAdvertisements -bool YES
+sudo defaults write /Library/Preferences/com.apple.mDNSResponder \
+  NoMulticastAdvertisements -bool YES
 ```
 
 [Disable Handoff](https://support.apple.com/guide/mac-help/change-airdrop-handoff-settings-mchl6a407f99) and [Bluetooth](https://support.apple.com/guide/mac-help/turn-bluetooth-on-or-off-blth1008) features.
@@ -1576,12 +1578,13 @@ Software | Category | Description
 
 # Additional resources
 
-- [Apple Open Source](https://opensource.apple.com/)
 - [iCloud security and privacy overview](https://support.apple.com/102651)
 - [EFF Surveillance Self-Defense Guide](https://ssd.eff.org/)
+- [beerisgood/macOS_Hardening](https://github.com/beerisgood/macOS_Hardening)
 - [Reverse Engineering macOS blog](https://reverse.put.as/)
 - [Reverse Engineering Resources](http://samdmarshall.com/re.html)
 - [Malwarebytes Blog](https://www.malwarebytes.com/blog)
 - [Objective-See's Blog](https://objective-see.com/blog.html)
 - [CIS Benchmarks](https://www.cisecurity.org/benchmark/apple_os/)
+- [Apple Open Source](https://opensource.apple.com/)
 - [iOS, The Future Of macOS, Freedom, Security And Privacy In An Increasingly Hostile Global Environment](https://gist.github.com/iosecure/357e724811fe04167332ef54e736670d)

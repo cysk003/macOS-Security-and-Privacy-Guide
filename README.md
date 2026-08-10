@@ -1,10 +1,8 @@
 This guide is a collection of techniques for improving the security and privacy of macOS on [Apple silicon](https://support.apple.com/116943) Macs. It targets experienced users who want security practices commonly used by organizations, but is also suitable for novice users with an interest in privacy and security.
 
-For securing computers in an organization, refer to the [security guidelines from NIST](https://github.com/usnistgov/macos_security), a U.S. government cybersecurity standards [organization](https://en.wikipedia.org/wiki/National_Institute_of_Standards_and_Technology)
+For organization-managed Macs, see the [macOS Security Compliance Project](https://github.com/usnistgov/macos_security), maintained by the [U.S. National Institute of Standards and Technology](https://en.wikipedia.org/wiki/National_Institute_of_Standards_and_Technology).
 
 This guide is provided "as is" - without warranties of any kind. You are solely responsible for any consequences of following it.
-
-To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Security-and-Privacy-Guide/pulls) or open an [issue](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues).
 
 - [Basics](#basics)
 - [Threat modeling](#threat-modeling)
@@ -12,6 +10,7 @@ To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Secu
   - [Adversaries](#adversaries)
   - [Capabilities](#capabilities)
   - [Mitigations](#mitigations)
+  - [Example model](#example-model)
 - [Hardware](#hardware)
 - [Installing macOS](#installing-macos)
   - [System activation](#system-activation)
@@ -28,8 +27,16 @@ To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Secu
 - [Lockdown Mode](#lockdown-mode)
 - [Firewall](#firewall)
   - [Application layer firewall](#application-layer-firewall)
+    - [Stealth mode](#stealth-mode)
+    - [Signed apps](#signed-apps)
+    - [Reload firewall](#reload-firewall)
+    - [Get state](#get-state)
+    - [AirDrop](#airdrop)
   - [Third-party firewalls](#third-party-firewalls)
   - [Packet filter](#packet-filter)
+    - [Example pf config](#example-pf-config)
+    - [Firewall commands](#firewall-commands)
+    - [Block networks](#block-networks)
 - [Services](#services)
 - [Siri Suggestions and Spotlight](#siri-suggestions-and-spotlight)
 - [Homebrew](#homebrew)
@@ -76,13 +83,15 @@ To suggest a change, submit a [pull request](https://github.com/drduh/macOS-Secu
 - [Related software](#related-software)
 - [Additional resources](#additional-resources)
 
+---
+
 # Basics
 
 Apply general security best practices:
 
 - Create a [threat model](#threat-modeling)
-  - What needs protection and from whom? Is the adversary a three-letter agency, an eavesdropper on a network, or a determined [Advanced Persistent Threat (APT)](https://en.wikipedia.org/wiki/Advanced_persistent_threat) orchestrating a campaign against you?
-  - Recognize threats and learn how to reduce the number of ways an attacker could potentially access a system or data.
+  - Is your adversary a local eavesdropper, a criminal using common malware, or a well-funded and highly capable organization?
+  - Define the threats or groups you are defending against and what they can realistically do.
 
 - Keep the system and software up to date
   - Regularly install available updates for the operating system and all applications.
@@ -90,12 +99,13 @@ Apply general security best practices:
   - Subscribe to the [Apple security-announce](https://lists.apple.com/archives/list/security-announce@lists.apple.com/) mailing list or check [Apple security releases](https://support.apple.com/100100).
 
 - Encrypt sensitive data
-  - In addition to [FileVault](https://support.apple.com/guide/mac-help/protect-data-on-your-mac-with-filevault-mh11785) storage encryption, use the [built-in password manager](https://support.apple.com/105115) to protect passwords and other sensitive data.
+  - Enable [FileVault](https://support.apple.com/guide/mac-help/protect-data-on-your-mac-with-filevault-mh11785) to encrypt internal storage.
+  - Use a [password manager](https://support.apple.com/105115) for account credentials and consider encrypting especially sensitive files separately.
 
 - Ensure data availability
   - Create [regular backups](https://support.apple.com/104984) of critical data and be ready to [restore from a backup](https://support.apple.com/102551) in case of compromise.
-  - [Encrypt locally](https://support.apple.com/guide/mac-help/keep-your-time-machine-backup-disk-secure-mh21241) before copying backups to unencrypted external media or the "cloud"; alternatively, enable [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f).
-  - Verify backups by accessing them on a scheduled basis.
+  - [Encrypt backups](https://support.apple.com/guide/mac-help/keep-your-time-machine-backup-disk-secure-mh21241) before copying them to external media or third-party cloud storage. Alternatively, use a backup service that provides [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f).
+  - Verify backups by accessing them on a regular, scheduled basis.
 
 - Click carefully
   - Ultimately, the security of a system depends on the capabilities and habits of its administrator.
@@ -103,7 +113,7 @@ Apply general security best practices:
 
 # Threat modeling
 
-The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling). This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses. Each individual should develop their own unique threat model. Threat models are likely to change over time and should be periodically re-assessed.
+The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling): a general description of what you want to protect, who might try to access it, how they could do so, and which controls are worth usability trade-offs. This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses.
 
 ## Assets
 
@@ -117,15 +127,17 @@ Define whom you are defending against. Start by defining the motivation each adv
 
 ## Capabilities
 
-To counter adversaries, understand both their capabilities and limitations. Rank them from least to most capable. For example, a common thief operates opportunistically: they will likely be defeated by the basics, such as screen lock and encrypted storage with strong passwords. A more sophisticated and determined adversary may require fully powering off a device when not in use to clear credentials from memory and stronger authentication mechanisms.
+For each adversary, list what they can and cannot do, ranking them from least to most capable. For example, a casual thief operates opportunistically: they will likely be defeated by basic controls, such as screen lock and encrypted storage with strong passwords. A more sophisticated and determined adversary may require fully powering off a device when not in use to clear credentials from memory and stronger authentication mechanisms.
 
 ## Mitigations
 
 Choose the best mitigation for each threat. For example, avoid writing passwords on paper if a roommate might find them, or encrypt storage to protect its data if it is stolen.
 
-Security should be balanced with usability: every mitigation should counter some adversarial capability to justify any inconvenience. If you can't think of any more capabilities your adversaries might have and you've implemented mitigations for them all, your work is done.
+Security should be balanced with usability: every mitigation should counter some adversarial capability to justify any inconvenience. Stop adding defenses when the remaining risks are acceptable for a situation. Revisit the model when devices, data, travel, work, or adversaries change.
 
-The following is an example of assets to protect:
+## Example model
+
+The following table is an example of a simple threat model:
 
 Adversary | Motivation | Capabilities | Mitigation
 :-: | :-: | :-: | :-:
@@ -139,14 +151,13 @@ Read more about [threat modeling](https://www.netmeister.org/blog/threat-model-1
 
 # Hardware
 
-> [!IMPORTANT]
-> Macs with Intel CPUs have [security vulnerabilities](https://github.com/axi0mX/ipwndfu?tab%253Dreadme-ov-file#checkm8) on a hardware level which cannot be patched.
+[Apple silicon hardware](https://support.apple.com/guide/security/hardware-security-overview-secf020d1074/1/web/1) provide hardware-backed security features, including Secure Enclave-based key protection and stronger boot security options. They are generally the preferred platform for the protections discussed in this guide.
 
-macOS is most secure when running on [Apple silicon hardware](https://support.apple.com/guide/security/hardware-security-overview-secf020d1074/1/web/1). In general, newer models offer stronger security guarantees. Avoid non-Apple hardware running macOS and systems that do not support the latest macOS release, as Apple does not [patch all vulnerabilities](https://support.apple.com/guide/deployment/about-software-updates-depc4c80847a) in legacy versions.
+Some Intel-based Macs, especially models with vulnerable [T2-era hardware](https://en.wikipedia.org/wiki/Apple_T2), are affected by hardware vulnerabilities that cannot be fully fixed by a macOS update.
+
+Avoid non-Apple hardware running macOS and systems that do not support the latest macOS release, as Apple does not [patch all vulnerabilities](https://support.apple.com/guide/deployment/about-software-updates-depc4c80847a) in legacy versions.
 
 Apple accessories generally receive firmware updates through macOS and support current [Bluetooth security features](https://support.apple.com/guide/security/bluetooth-security-sec82597d97e/web). For example, [Bluetooth Low Energy](https://en.wikipedia.org/wiki/Bluetooth_Low_Energy) (BLE) Privacy uses rotating device addresses to reduce tracking; third-party accessories may not support this feature.
-
-When purchasing a Mac, consider paying in cash rather than ordering online or purchasing with a credit/debit card, to limit identifying information linked to the purchase.
 
 # Installing macOS
 
@@ -156,15 +167,13 @@ Install the latest supported version of macOS; newer versions of macOS include s
 
 ## System activation
 
-As part of Apple's [theft prevention system](https://support.apple.com/102541), Apple silicon Macs connect to Apple servers when macOS is installed to check against the database of lost or stolen systems.
-
-Read about [how this process works](https://support.apple.com/guide/security/localpolicy-signing-key-creation-management-sec1f90fbad1).
+During installation, Apple silicon Macs contact Apple activation service to confirm that the device is not reported [lost or stolen](https://support.apple.com/102541). Read about [how this process works](https://support.apple.com/guide/security/localpolicy-signing-key-creation-management-sec1f90fbad1).
 
 ## Apple Account
 
-An [Apple Account](https://www.apple.com/legal/privacy/data/en/apple-id/) is not required to use macOS, but it is necessary to access the App Store and most Apple services, including iCloud and Apple Music.
+An [Apple Account](https://www.apple.com/legal/privacy/data/en/apple-id/) is optional for basic macOS use but required for the App Store and many Apple services. Review [data privacy settings](https://support.apple.com/102651) before enabling features.
 
-You can later [disable synchronization](https://support.apple.com/102651), [enable end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f/web) for eligible iCloud data, [manage Apple Account data](https://support.apple.com/102283), or delete the account.
+Enable [end-to-end encryption](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f/web) for iCloud and review [Apple Account data](https://support.apple.com/102283).
 
 ## App Store
 
@@ -176,7 +185,7 @@ Using the App Store requires an Apple Account, which can pose a privacy risk.
 
 ## Virtualization
 
-On Apple silicon, macOS includes Apple's [Virtualization framework](https://developer.apple.com/documentation/virtualization), which supports macOS and Windows 11 ARM virtual machines through tools such as:
+Virtualization enables another operating system to run in an isolated virtual machine. On [Apple silicon](https://developer.apple.com/documentation/virtualization), macOS can run supported macOS guests and Windows 11 for ARM using apps such as the following:
 
 - [UTM](https://mac.getutm.app/) - Follow the [documentation](https://docs.getutm.app/guest-support/macos) to create macOS and other virtual machines.
 - [VirtualBuddy](https://github.com/insidegui/VirtualBuddy) - Application for virtualizing macOS 12+ on Apple silicon.
@@ -191,13 +200,13 @@ On Apple silicon, macOS includes Apple's [Virtualization framework](https://deve
 
 ### Apple containers
 
-[Apple Container](https://github.com/apple/container) provides a native command-line workflow for running Linux container images on macOS. Unlike container runtimes that share a single Linux virtual machine, Apple Container runs each container in an isolated, lightweight virtual machine using macOS virtualization capabilities. This provides a stronger isolation boundary between workloads and the host operating system.
+[Apple Container](https://github.com/apple/container) is a command-line tool for running Linux containers on macOS. Unlike container runtimes that share a single Linux virtual machine, Apple Container runs each container in an isolated, lightweight virtual machine using macOS virtualization capabilities. This provides a stronger isolation boundary between workloads and the host operating system.
 
 # First boot
 
 When macOS starts for the first time, **Setup Assistant** requires the creation of a primary account.
 
-Set a [strong password](https://www.eff.org/dice) without a hint.
+Set a [long and unique password](https://www.eff.org/dice). Leave the password hint field blank.
 
 Avoid personally identifiable names: the computer name (such as "John Appleseed's MacBook") is broadcast over local networks and visible to other devices.
 
@@ -211,7 +220,7 @@ sudo scutil --set LocalHostName MacBook
 
 # Admin and user accounts
 
-The first user account created is always an administrator account. Administrator accounts belong to the admin group and can use [sudo](https://en.wikipedia.org/wiki/Sudo) (a command that grants temporary administrator access) to run commands with elevated privileges, up to and including root (full system) control. Any program the administrator executes can potentially obtain the same access, and sudo may have vulnerabilities [exploited](https://bogner.sh/2014/03/another-mac-os-x-sudo-password-bypass/) by concurrently-running software.
+The first account created is an administrator account. Administrators can change system-wide settings and run commands with [sudo](https://en.wikipedia.org/wiki/Sudo), which temporarily grants elevated privileges. Any program the administrator runs could obtain the same access; sudo may also have [vulnerabilities](https://bogner.sh/2014/03/another-mac-os-x-sudo-password-bypass/).
 
 It is considered a [best practice](https://help.apple.com/machelp/mac/10.12/index.html#/mh11389) to use a dedicated standard account for regular, daily work and only use the administrator account for software and system installation, configuration and updates.
 
@@ -219,28 +228,17 @@ It is not required to ever log in with the admin account via the macOS login scr
 
 ## Caveats
 
-- Only administrators can install applications in the system-wide `/Applications` directory. Finder and Installer will prompt a standard user with a password prompt asking an administrator to approve the change. Many applications can be installed in `~/Applications` instead. As a rule of thumb, applications which do not require admin access – or do not complain about not being installed in `/Applications` – should be installed in the user directory, the rest in the local directory. App Store applications are still installed in `/Applications` and require no additional authentication.
+- Only administrators can install applications in the system-wide `/Applications` directory. Finder and Installer ask a standard user to enter an administrator's credentials when approval is required. Some applications can instead be installed in `~/Applications`; applications which do not require admin access should be installed in the user directory. App Store applications are still installed in `/Applications` and require no additional authentication.
 - A standard user usually is not authorized to use `sudo`. When administrator privileges are required, macOS prompts for an administrator's credentials, or the task can be run from an administrator account.
 - System Settings and several system utilities (e.g., Wi-Fi Diagnostics) require administrator permission for full functionality. Some System Settings need to be unlocked by selecting the lock icon. Some applications will simply prompt for authentication upon opening, others must be opened by an admin account directly to access all functions (e.g., Console).
-- There are third-party applications that will not work correctly because they assume the user account is an admin. These programs may have to be executed by the admin account, or using the `open` utility.
+- Some third-party applications assume the current user is an administrator and will not work from a standard account.
 - See [issue 167](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/167) for additional considerations.
 
 ## Setup
 
-Accounts can be created and managed in System Settings. On existing systems, it is generally easier to create a second admin account and then change the original account from an administrator account to a standard account.  Newly-installed systems should instead add a standard account after setup.
+Accounts be created and managed in System Settings. On existing systems, it is generally easier to create a second admin account and then change the original account from an administrator account to a standard account. Newly-installed systems should instead add a standard account after setup.
 
-Demoting an account can be done either from the new admin account in System Settings – the other account must be logged out – or by executing these commands (it may not be necessary to execute both, see [issue 179](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/179)):
-
-```bash
-sudo dscl . -delete /Groups/admin GroupMembership <username>
-sudo dscl . -delete /Groups/admin GroupMembers <GeneratedUID>
-```
-
-To obtain an account's **GeneratedUID**:
-
-```bash
-dscl . -read /Users/<username> GeneratedUID
-```
+Demoting an account can be done from the new admin account in System Settings.
 
 See also [this post](https://superuser.com/a/395738) for more information about how macOS determines group membership.
 
@@ -264,7 +262,7 @@ fdesetup status
 
 # Lockdown Mode
 
-[Lockdown Mode](https://support.apple.com/105120) significantly reduces attack surface by disabling system and application features commonly exploited in targeted attacks.
+[Lockdown Mode](https://support.apple.com/105120) significantly reduces attack surface by disabling system and application features commonly exploited in sophisticated attacks.
 
 When Lockdown Mode is enabled, Safari has an option to [exclude trusted websites](https://ssd.eff.org/module/how-to-enable-lockdown-mode-on-iphone) from restrictions.
 
@@ -272,37 +270,44 @@ When Lockdown Mode is enabled, Safari has an option to [exclude trusted websites
 
 There are several types of firewalls available for macOS.
 
+> [!NOTE]
+> If malware gains administrator control, it may disable or bypass firewall policies; do not rely on a local firewall as strong protection against a full system compromise.
+
 ## Application layer firewall
 
 The built-in firewall provides basic protection and blocks incoming connections only. It can neither monitor nor block outgoing connections.
 
 It can be controlled by the **Firewall** tab of **Network** in **System Settings**, or with the following commands.
 
-Enable the firewall and Stealth Mode:
+Attackers frequently scan networks to identify systems to target. When [stealth mode](https://support.apple.com/guide/mac-help/use-stealth-mode-to-keep-your-mac-more-secure-mh17133/mac) is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
+
+### Stealth mode
+
+Enable the firewall and stealth mode:
 
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 ```
 
-Attackers scan networks to identify systems to target. When Stealth Mode is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
+### Signed apps
 
-Prevent built-in and downloaded software from automatically receiving incoming connections:
+By default, the firewall allows incoming connections for software signed by Apple or by an identified developer. Disabling these rules makes macOS ask before allowing an application to accept incoming connections:
 
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsigned off
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsignedapp off
 ```
 
-Applications signed by a valid certificate authority are automatically added to the list of allowed apps, rather than prompting the user to authorize them. Apps included in macOS are signed by Apple and are allowed to receive incoming connections when this setting is enabled.
+### Reload firewall
 
-If an unsigned app not listed in the firewall list is opened, a dialog appears with options to Allow or Deny connections. If allowed, macOS signs the application and adds it to the firewall list. If denied, macOS adds it to the list and denies incoming connections.
-
-After interacting with `socketfilterfw`, restart the process by sending a [SIGHUP](https://en.wikipedia.org/wiki/SIGHUP) signal:
+After changing settings with `socketfilterfw`, reload the firewall service to apply the new configuration:
 
 ```bash
 sudo pkill -HUP socketfilterfw
 ```
+
+### Get state
 
 Confirm firewall state:
 
@@ -334,10 +339,7 @@ Applications such as [Little Snitch](https://www.obdev.at/products/littlesnitch/
 
 These programs are capable of monitoring and blocking both incoming and outgoing connections. However, they may require a closed-source [system extension](https://support.apple.com/HT210999).
 
-If frequent allow-or-block prompts are overwhelming, begin with Silent Mode configured to allow connections. Review the configuration periodically to understand each application's network activity.
-
-> [!NOTE]
-> A root-level compromise can undermine host-based network controls, depending on the product and system configuration.
+If frequent allow-or-block prompts are overwhelming, temporarily allow connections while also recording them ([Silent Allow mode](https://help.obdev.at/littlesnitch6/concepts-opmodes) in Little Snitch). Review the configuration to understand and control network activity.
 
 ## Packet filter
 
@@ -346,6 +348,8 @@ macOS also includes [pf](https://en.wikipedia.org/wiki/PF_(firewall)), a packet-
 pf can also be controlled with a graphical application such as [Murus](https://www.murusfirewall.com/).
 
 Many [books](https://nostarch.com/book-of-pf-4e) and [guides](https://www.openbsd.org/faq/pf/) cover the pf firewall. The following example shows how to configure a basic policy.
+
+### Example pf config
 
 Add the following rules to a file named `pf.rules`:
 
@@ -386,6 +390,8 @@ pass out on $wifi proto udp from ($wifi) to any keep state
 pass out on $wifi proto icmp from ($wifi) to any keep state
 ```
 
+### Firewall commands
+
 To control the firewall:
 
 Command | Task
@@ -404,7 +410,9 @@ Command | Task
 `sudo ifconfig pflog0 create` | create packet log interface
 `sudo tcpdump -ni pflog0` | monitor blocked packets
 
-pf can block access to ranges of network addresses, for example to an entire organization. Query [Merit RADb](https://www.radb.net/) for the list of networks in use by an [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) (a large network operated by a single organization), such as [Facebook](https://ipinfo.io/AS32934):
+### Block networks
+
+pf can block ranges of network addresses, for example to an entire organization. Query [Merit RADb](https://www.radb.net/) for the list of networks in use by an [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) (a large network operated by a single organization), such as [Facebook](https://ipinfo.io/AS32934):
 
 ```bash
 whois -h whois.radb.net '!gAS32934'
@@ -446,7 +454,7 @@ IP 192.168.1.1.62771 > 157.240.2.35.443: tcp 0
 IP 192.168.1.1.62771 > 157.240.2.35.443: tcp 0
 ```
 
-The firewall drops the outbound [SYN packets](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Connection_establishment), so the TCP connection cannot be established.
+The firewall drops the initial packets needed to start the [TCP connection](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Connection_establishment), so the connection times out.
 
 See [drduh/config/scripts/pf-blocklist.sh](https://github.com/drduh/config/blob/main/scripts/pf-blocklist.sh) for more inspiration.
 
@@ -485,16 +493,16 @@ See [script management with launchd](https://support.apple.com/guide/terminal/sc
 
 # Siri Suggestions and Spotlight
 
-Apple is moving many Siri functions to on-device processing, but using Siri Suggestions or Spotlight may still send some information to Apple. See Apple's [Privacy Policy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) to see exactly what is sent and how to disable it.
+Siri Suggestions and Spotlight may send some queries or usage information to Apple, depending on the enabled features. In System Settings, search for Siri and Spotlight, then disable online suggestions and configure categories to exclude from indexing or suggestion. Review Apple's [Search & Privacy](https://www.apple.com/legal/privacy/data/en/siri-suggestions-search/) policy for more information.
 
 # Homebrew
 
 If a program is not available through the App Store, consider using [Homebrew](https://brew.sh/).
 
 > [!IMPORTANT]
-> Some Homebrew installation or management workflows may prompt for App Management or [Full Disk Access](https://eclecticlight.co/2025/11/08/explainer-permissions-privacy-and-tcc/). Grant these permissions only when necessary: they can substantially expand the access available to commands run through Terminal.
+> Some Homebrew installation or management workflows may prompt for App Management or [Full Disk Access](https://eclecticlight.co/2025/11/08/explainer-permissions-privacy-and-tcc/). Grant these permissions only when they are fully understood and necessary.
 
-Remember to periodically run `brew upgrade` on trusted and secure networks to download and install software updates. To get information on a package before installation, run `brew info <package>` and check its formula online. You may also wish to enable [additional security options](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/138), such as `HOMEBREW_NO_INSECURE_REDIRECT=1`
+Periodically run `brew upgrade` on trusted and secure networks to install software updates. To get information on a package before installation, run `brew info <package>` and review its formula online. Enable [additional security options](https://github.com/drduh/macOS-Security-and-Privacy-Guide/issues/138), such as `HOMEBREW_NO_INSECURE_REDIRECT=1`
 
 According to [Homebrew's Anonymous Analytics](https://docs.brew.sh/Analytics), Homebrew collects anonymous usage analytics and reports them to a self-hosted [InfluxDB](https://en.wikipedia.org/wiki/InfluxDB) instance.
 
@@ -533,7 +541,8 @@ Popular hosts lists include:
 To download and append a list to the hosts file, use the [tee](https://man7.org/linux/man-pages/man1/tee.1.html) command:
 
 ```bash
-curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts | sudo tee -a /etc/hosts
+curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts |
+  sudo tee -a /etc/hosts
 ```
 
 [Little Snitch](#third-party-firewalls) also supports [blocklists](https://help.obdev.at/littlesnitch6/lsc-blocklists).
@@ -762,11 +771,11 @@ Web browsers create significant security and privacy risks because they download
 
 A key browser security boundary is the [same-origin policy](https://en.wikipedia.org/wiki/Same-origin_policy) (SOP), which prevents one website from reading another website's data. A bypass can expose data or actions from other sites in the same browser profile.
 
-Some browser exploits rely on social engineering to gain persistence (ability to remain active after the initial attack). Be mindful when visiting untrusted sites and especially careful when downloading unrecognized software.
+Some browser attacks rely on convincing the user to install software, grant permissions, or use a malicious extension. Be especially careful with unexpected downloads, extension prompts, and requests to run commands in Terminal.
 
 Browser extensions also pose a significant security risk: a malicious or poorly-made extension can compromise everything in the browser, including credentials. The use of browser extensions should be limited to critically necessary ones, published by trustworthy developers only.
 
-Use separate browser profiles to compartmentalize identities, cookies, and site data. If practical, disable JavaScript and only allow it on trusted sites using browser site permissions.
+Use separate browser profiles for different identities and purposes. If practical, disable JavaScript and only allow it on trusted sites using browser site permissions.
 
 [Mozilla Firefox](https://www.firefox.com/), [Google Chrome](https://www.google.com/chrome), [Safari](https://www.apple.com/safari), and [Tor Browser](https://www.torproject.org/download) are popular browsers, each with unique features and individual purposes.
 
@@ -776,7 +785,7 @@ Firefox modernized major parts of its codebase through the [Quantum](https://wik
 
 Firefox offers a comparable security model to Chrome, including a [bug bounty program](https://www.mozilla.org/security/bug-bounty/) for responsible disclosure of vulnerabilities. Firefox follows a four-week release cycle.
 
-See [drduh/config/firefox.user.js](https://github.com/drduh/config/blob/main/firefox.user.js) and [arkenfox/user.js](https://github.com/arkenfox/user.js) for recommended configurations for Firefox. Also see [NoScript](https://noscript.net/), an extension which allows selective script blocking.
+See [drduh/config/firefox.user.js](https://github.com/drduh/config/blob/main/firefox.user.js) and [arkenfox/user.js](https://github.com/arkenfox/user.js) for recommended configurations. Also see [NoScript](https://noscript.net/), an extension which allows selective script blocking.
 
 Firefox [focuses on user privacy](https://www.mozilla.org/firefox/privacy). It supports [tracking protection](https://developer.mozilla.org/docs/Web/Privacy/Firefox_tracking_protection) in Private Browsing mode. The tracking protection can be enabled for the default account, although it may break the browsing experience on some websites. Firefox in Strict tracking protection mode will [randomize fingerprints](https://support.mozilla.org/kb/firefox-protection-against-fingerprinting) to defend against tracking. Firefox offers separate user [profiles](https://support.mozilla.org/kb/profile-manager-create-remove-switch-firefox-profiles). Browsing can also be delineated with [Multi-Account Containers](https://support.mozilla.org/kb/containers).
 
@@ -784,18 +793,9 @@ Firefox only supports Web Extensions through the [WebExtension API](https://deve
 
 ## Chrome
 
-[Google Chrome](https://www.google.com/chrome/) is based on the open-source [Chromium project](https://www.chromium.org/) with certain [proprietary components](https://fossbytes.com/difference-google-chrome-vs-chromium-browser), such as:
-
-- [Chrome Web Store](https://chromewebstore.google.com/)
-- Automatic updates with GoogleSoftwareUpdateDaemon
-- Usage tracking and crash reporting, which can be disabled through Chrome's settings
-- Media Codec support for proprietary codecs
-- PDF viewer
-- Non-optional tracking. Google Chrome installer includes a randomly generated token, which is sent to Google. The RLZ identifier stores information in the form of encoded strings, such as the source of the download and install time. It does not include personal information and it's used to measure the effectiveness of a promotional campaign. **Chrome downloaded from Google's website doesn't have the RLZ identifier**. The source code to decode the strings is made open by Google.
+[Google Chrome](https://www.google.com/chrome/) is based on the open-source [Chromium project](https://www.chromium.org/). Chrome includes some proprietary components, automatic updates, a PDF viewer, media-codec support, crash reporting, and Google account integration. Review Chrome privacy settings and Google privacy policies for more information.
 
 Chrome offers account sync between multiple devices, including credentials; the data is encrypted with the account password.
-
-The Chrome Web Store requires a [5 USD registration fee](https://developer.chrome.com/docs/webstore/register) to submit extensions. This allows development of open-source Web Extensions which do not aim to monetize through usage.
 
 Chrome has the largest share of global usage and is the preferred target platform for the majority of developers. Major technologies are based on Chrome's open-source components, such as [node.js](https://nodejs.org/) which uses [Chrome's V8](https://developers.google.com/v8) Engine and the [Electron](https://electron.atom.io/) framework, which is based on Chromium and node.js. Chrome's vast user base makes it the most attractive target for threat actors and security researchers. Despite constant attacks, Chrome has retained an impressive security track record over the years. This is not a small feat.
 
@@ -811,11 +811,11 @@ See [Chromium Security](https://www.chromium.org/Home/chromium-security) and [Ch
 
 ## Safari
 
-[Safari](https://www.apple.com/safari) is the default browser on macOS. It is also the most optimized browser for reducing battery use. Safari has both open-source and proprietary components. Safari is based on the open-source Web Engine [WebKit](https://webkit.org/), which is ubiquitous among the macOS ecosystem. WebKit is used by Apple apps such as Mail, Books, and the App Store. Chrome's [Blink](https://www.chromium.org/blink) engine is a fork of WebKit and both engines share a number of similarities.
+[Safari](https://www.apple.com/safari) is Apple's built-in browser and is integrated with macOS, providing battery efficiency improvements on Apple hardware.
+
+Safari has both open-source and proprietary components. Safari is based on the open-source Web Engine [WebKit](https://webkit.org/), which is ubiquitous among the macOS ecosystem. WebKit is used by Apple apps such as Mail, Books, and the App Store. Chrome's [Blink](https://www.chromium.org/blink) engine is a fork of WebKit and both engines share a number of similarities.
 
 Safari supports certain unique features that benefit user security and privacy. [Content blockers](https://webkit.org/blog/3476/content-blockers-first-look) enable the creation of content blocking rules without using JavaScript. This rule based approach greatly improves memory use, security, and privacy. Safari 11 introduced [Intelligent Tracking Prevention](https://webkit.org/blog/7675/intelligent-tracking-prevention), which removes tracking data stored in Safari after a period of non-interaction by the user from the tracker's website. Safari can randomize the browser fingerprint to reduce tracking. Safari does not support certain features such as WebUSB or the Battery API intentionally for security and privacy reasons. Private tabs in Safari have isolated cookies and cache that is destroyed when you close the tab. Safari also support Profiles which are equivalent to Firefox's Multi-Account Containers for separating cookies and browsing. Safari can be made significantly more secure with [lockdown mode](#lockdown-mode), which can be disabled per-site. Read more about [tracking prevention](https://webkit.org/tracking-prevention/) in Safari.
-
-Safari offers an invite-only [bounty program](https://developer.apple.com/bug-reporting) for bug reporting to a select number of security researchers. The bounty program was announced during Apple's [presentation](https://www.blackhat.com/docs/us-16/materials/us-16-Krstic.pdf) at [BlackHat](https://www.blackhat.com/us-16/briefings.html#behind-the-scenes-of-ios-security) 2016.
 
 Web Extensions in Safari have an additional option to use native code in Safari's sandbox environment, in addition to Web Extension APIs. Web Extensions in Safari are also distributed through Apple App Store. App Store submission comes with the added benefit of Web Extension code being audited by Apple. On the other hand App Store submission comes at a steep cost. Yearly [developer subscription](https://developer.apple.com/support/compare-memberships) fee costs 100 USD (in contrast to Chrome's 5 USD fee and Firefox's free submission). The high cost is prohibitive for the majority of open-source developers. As a result, Safari has very few extensions to choose from. However, keep the high cost in mind when installing extensions. It is expected that most Web Extensions will have some way of monetizing usage to cover development costs. Avoid Web Extensions without open-source code available for review.
 
@@ -827,7 +827,7 @@ See also [el1t/uBlock-Safari](https://github.com/el1t/uBlock-Safari/wiki/Disable
 
 ## Web browser privacy
 
-Web browsers reveal information in several ways, for example through the [Navigator](https://developer.mozilla.org/docs/Web/API/Navigator) interface, which may include information such as the browser version, operating system, site permissions, and the device battery level. Many websites also use [canvas fingerprinting](https://en.wikipedia.org/wiki/Canvas_fingerprinting) to uniquely identify users across sessions.
+Websites infer information about the [browser and device](https://developer.mozilla.org/docs/Web/API/Navigator) from settings, fonts, screen size, language, IP address, and browser behavior. This information contributes to [browser fingerprinting](https://en.wikipedia.org/wiki/Device_fingerprint).
 
 For more information about security-conscious browsing and what data is sent by the browser, see [HowTo: Privacy & Security Conscious Browsing](https://gist.github.com/atcuno/3425484ac5cce5298932), [browserleaks.com](https://browserleaks.com/), [Am I Unique?](https://amiunique.org/fingerprint) and [EFF Cover Your Tracks](https://coveryourtracks.eff.org/) resources.
 
@@ -957,7 +957,7 @@ $ openssl x509 -inform der -in codesign0 -fingerprint -noout
 SHA256 Fingerprint=76:3C:89:02:ED:CB:AD:8E:59:86:1E:93:D3:05:5B:28:F9:04:0C:96:03:8B:16:28:9F:38:64:ED:53:45:B4:DA
 ```
 
-Tor traffic can be obfuscated using a [pluggable transport](https://support.torproject.org/tor-browser/circumvention/). This can be done by setting up a [relay](https://support.torproject.org/relays/) or using an existing [bridge](https://bridges.torproject.org/).
+Tor Browser can use special connection methods called [pluggable transports](https://support.torproject.org/tor-browser/circumvention/) to make traffic harder to identify or block. This can be done by setting up a [relay](https://support.torproject.org/relays/) or using an existing [bridge](https://bridges.torproject.org/).
 
 The Tor network provides [anonymity](https://www.privateinternetaccess.com/blog/2013/10/how-does-privacy-differ-from-anonymity-and-why-are-both-important/), which is not necessarily the same as privacy. The network does not defend against a global observer capable of traffic analysis and correlation. See also [Seeking Anonymity in an Internet Panopticon](https://bford.info/pub/net/panopticon-cacm.pdf) and [Traffic Correlation on Tor by Realistic Adversaries](https://www.ohmygodel.com/publications/usersrouted-ccs13.pdf).
 
@@ -983,7 +983,7 @@ PGP is a standard for encrypting and signing data, especially email. It can prot
 
 GPG (GNU Privacy Guard) is a GPL-licensed, open-source program compliant with the PGP standard. It can verify software signatures and encrypt files [symmetrically](https://en.wikipedia.org/wiki/Symmetric-key_algorithm) or using [public keys](https://en.wikipedia.org/wiki/Public-key_cryptography).
 
-Install from Homebrew with `brew install gnupg` or using [GPG Suite](https://gpgtools.org/).
+Install GnuPG with Homebrew (`brew install gnupg`) or install [GPG Suite](https://gpgtools.org/).
 
 Download [gpg.conf](https://github.com/drduh/YubiKey-Guide/blob/main/config/gpg.conf) to use recommended settings:
 
@@ -1000,7 +1000,7 @@ Email is not designed to provide strong privacy by default: message content may 
 
 ## Thunderbird
 
-[Thunderbird](https://www.thunderbird.net/) is a free and open-source email client with standard [IMAP](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol), [POP](https://en.wikipedia.org/wiki/Post_Office_Protocol), [CalDAV](https://en.wikipedia.org/wiki/CalDAV), and [CardDAV](https://en.wikipedia.org/wiki/CardDAV) support. It is a suitable choice for accessing and retaining mail locally rather than depend exclusively on a provider's remote server.
+[Thunderbird](https://www.thunderbird.net/) is a free and open-source email client with standard [IMAP](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol), [POP](https://en.wikipedia.org/wiki/Post_Office_Protocol), [CalDAV](https://en.wikipedia.org/wiki/CalDAV), and [CardDAV](https://en.wikipedia.org/wiki/CardDAV) support. It is a suitable choice for accessing mail and retaining local copies rather than depending exclusively on a provider's remote server.
 
 Thunderbird includes support for [OpenPGP](https://support.mozilla.org/kb/openpgp-thunderbird-howto-and-faq) email encryption, which can protect message content and provide cryptographic [signatures](https://www.gnupg.org/gph/en/manual/x135.html). Always verify public-key fingerprints through an independent channel before relying on a key for sensitive communication.
 
@@ -1021,6 +1021,8 @@ XMPP is not end-to-end encrypted (E2EE) by default; use [OMEMO](https://omemo.to
 [Signal](https://signal.org/) is a popular E2EE messenger whose [double-ratchet](https://signal.org/docs/specifications/doubleratchet/) protocol is used by many other applications including WhatsApp, Google Messages, and Facebook Messenger.
 
 To use the Signal desktop app, Signal must first be installed on a phone.
+
+See EFF's [Signal guide](https://ssd.eff.org/module/how-to-use-signal) for additional guidance.
 
 ## iMessage
 
@@ -1095,7 +1097,7 @@ macOS includes built-in antivirus software called [XProtect](https://support.app
 
 Applications such as [BlockBlock](https://objective-see.com/products/blockblock.html) or [hazcod/maclaunch](https://github.com/hazcod/maclaunch) might help prevent or detect persistent malware.
 
-Antivirus software may act as a "double-edged sword": capable of countering common, "garden-variety" malware, but having potential to increase attack surface with system-level privileges. They may also send telemetry and malware samples, increasing privacy risk.
+Antivirus software can help detect common malware, but it may also increase attack surface because it often runs with extensive system privileges. Some products may also send telemetry or samples to the vendor.
 
 See [Sophail: Applied attacks against Antivirus](https://lock.cmpxchg8b.com/sophailv2.pdf), [Analysis and Exploitation of an ESET Vulnerability](https://googleprojectzero.blogspot.ro/2015/06/analysis-and-exploitation-of-eset.html), [Popular Security Software Came Under Relentless NSA and GCHQ Attacks](https://theintercept.com/2015/06/22/nsa-gchq-targeted-kaspersky/), and [How Israel Caught Russian Hackers Scouring the World for U.S. Secrets](https://www.nytimes.com/2017/10/10/technology/kaspersky-lab-israel-russia-hacking.html).
 
@@ -1206,9 +1208,9 @@ chflags -R uchg ~/Library/LanguageModeling ~/Library/Spelling ~/Library/Suggesti
 QuickLook application support metadata can be cleared and locked with the commands:
 
 ```bash
-rm -rfv "~/Library/Application Support/Quick Look/*"
-chmod -R 000 "~/Library/Application Support/Quick Look"
-chflags -R uchg "~/Library/Application Support/Quick Look"
+rm -rfv "$HOME/Library/Application Support/Quick Look/*"
+chmod -R 000 "$HOME/Library/Application Support/Quick Look"
+chflags -R uchg "$HOME/Library/Application Support/Quick Look"
 ```
 
 > [!WARNING]
@@ -1222,22 +1224,22 @@ sudo chmod -R 000 /.DocumentRevisions-V100
 sudo chflags -R uchg /.DocumentRevisions-V100
 ```
 
-Saved application state metadata may be cleared and locked with the commands:
+Saved application state metadata can be listed and locked with the commands:
 
 ```bash
-rm -rfv ~/Library/Saved\ Application\ State/*
-rm -rfv ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
+ls ~/Library/Saved\ Application\ State/*
+ls ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 chmod -R 000 ~/Library/Saved\ Application\ State/
 chmod -R 000 ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 chflags -R uchg ~/Library/Saved\ Application\ State/
 chflags -R uchg ~/Library/Containers/<APPNAME>/Data/Library/Saved\ Application\ State
 ```
 
-Autosave metadata can be cleared and locked with the commands:
+Autosave metadata can be listed and locked with the commands:
 
 ```bash
-rm -rfv "~/Library/Containers/<APP>/Data/Library/Autosave Information"
-rm -rfv "~/Library/Autosave Information"
+ls "$HOME/Library/Containers/<APP>/Data/Library/Autosave Information"
+ls "$HOME/Library/Autosave Information"
 chmod -R 000 "~/Library/Containers/<APP>/Data/Library/Autosave Information"
 chmod -R 000 "~/Library/Autosave Information"
 chflags -R uchg "~/Library/Containers/<APP>/Data/Library/Autosave Information"
@@ -1268,15 +1270,15 @@ Additional metadata may exist in the following files:
 
 # Authentication
 
-The [Passwords](https://support.apple.com/guide/passwords/the-passwords-app-mchl901b1b95/mac) app creates [secure credentials](https://support.apple.com/guide/security/automatic-strong-passwords-secc84c811c4/web). It supports [passkeys](https://fidoalliance.org/passkeys/) - credentials which are more resilient to phishing.
+The [Passwords](https://support.apple.com/guide/passwords/the-passwords-app-mchl901b1b95/mac) app creates [secure credentials](https://support.apple.com/guide/security/automatic-strong-passwords-secc84c811c4/web). It supports [passkeys](https://fidoalliance.org/passkeys/), which are credentials designed to resist phishing when used with compatible services.
 
 [KeePassXC](https://keepassxc.org/) is an open-source, cross-platform password manager to consider. It supports strong authentication with compatible hardware tokens and a browser extension for entering credentials automatically.
 
 Memorable passwords can be created with [Diceware](https://secure.research.vt.edu/diceware/).
 
-Ensure online accounts have [multi-factor authentication](https://en.wikipedia.org/wiki/Multi-factor_authentication) enabled. The strongest form of multi-factor authentication is [WebAuthn](https://en.wikipedia.org/wiki/WebAuthn), followed by [TOTP](https://datatracker.ietf.org/doc/html/rfc6238)/[HOTP](https://datatracker.ietf.org/doc/html/rfc4226) (commonly implemented by authenticator apps); SMS-based codes are weakest since they rely on the service provider.
+Ensure online accounts have [multi-factor authentication](https://en.wikipedia.org/wiki/Multi-factor_authentication) enabled. Prefer phishing-resistant authentication, such as hardware tokens or passkeys with supported services. Authenticator apps are preferable to SMS codes, but any MFA is better than password-only authentication.
 
-[YubiKey](https://www.yubico.com/products/) is a popular authentication token. It can also store cryptographic keys for encryption and authentication - see [drduh/YubiKey-Guide](https://github.com/drduh/YubiKey-Guide).
+[YubiKey](https://www.yubico.com/products/) is a popular hardware authentication token. It can also store keys for encryption, signing and authentication tasks - see [drduh/YubiKey-Guide](https://github.com/drduh/YubiKey-Guide).
 
 GnuPG can also manage passwords and other encrypted files - see [drduh/Purse](https://github.com/drduh/Purse) and [drduh/pwd.sh](https://github.com/drduh/pwd.sh).
 
@@ -1284,7 +1286,7 @@ GnuPG can also manage passwords and other encrypted files - see [drduh/Purse](ht
 
 Encrypt files locally before backing them up to external media or online services.
 
-Follow the [3-2-1 backup model](https://www.cisa.gov/sites/default/files/publications/data_backup_options.pdf): keep 3 copies (original and two backups); keep backups on 2 different media types; store 1 backup copy remotely.
+Follow the [3-2-1 backup model](https://www.cisa.gov/sites/default/files/publications/data_backup_options.pdf): keep three copies of important data, store them on at least two different types of media, and keep at least one copy in a separate physical location.
 
 ## Time Machine
 
@@ -1324,7 +1326,7 @@ hdiutil eject /Volumes/secretStuff
 
 # Wi-Fi
 
-Wi-Fi networks continuously broadcast a **service set identifier (SSID)** which allows devices to passively scan for previously-connected networks. **Hidden** networks do not transmit an SSID and devices send a probe with the SSID to connect, which can reveal metadata. Avoid using [hidden networks](https://support.apple.com/guide/security/wi-fi-privacy-with-apple-devices-sec31e483abf/web#sec059998a98).
+Wi-Fi network names, called SSIDs, and device probe behavior can reveal information about nearby and previously-used networks. [Hidden networks](https://support.apple.com/guide/security/wi-fi-privacy-with-apple-devices-sec31e483abf/web#sec059998a98) do not provide meaningful privacy and can cause devices to actively probe for them.
 
 Set a [private Wi-Fi address](https://support.apple.com/guide/mac-help/use-a-private-wi-fi-address-on-mac-mchlb1cb3eb4/mac) to reduce network tracking.
 
@@ -1332,11 +1334,9 @@ Set wireless network security to [WPA3](https://en.wikipedia.org/wiki/WPA3#WPA3)
 
 # SSH
 
-For outgoing SSH connections, use hardware or password-protected keys, [set up](http://nerderati.com/2011/03/17/simplify-your-life-with-an-ssh-config-file/) remote hosts and consider [hashing](http://nms.csail.mit.edu/projects/ssh/) them for added privacy. See [drduh/config/ssh_config](https://github.com/drduh/config/blob/main/ssh_config) for recommended client options.
+For remote SSH connections, use a unique SSH key protected by a passphrase or a hardware token, verify server host keys, and avoid password-based authentication. See [drduh/config/ssh_config](https://github.com/drduh/config/blob/main/ssh_config) for recommended client options.
 
-An SSH tunnel can securely route traffic through another computer, similar to a VPN.
-
-To use Privoxy running on a remote host on port 8118:
+An SSH tunnel can securely route traffic through another computer, similar to a VPN. To use Privoxy running on a remote host on port 8118:
 
 ```bash
 ssh -C -L 5555:127.0.0.1:8118 you@remote-host.tld
@@ -1370,7 +1370,7 @@ sudo lsof -Pni TCP:22
 
 Do not leave the computer unattended in unsafe locations. A skilled attacker with unsupervised physical access could install a [hardware keylogger](https://trmm.net/Thunderstrike_31c3) to record keystrokes, including passwords. Using a Mac with a built-in keyboard or a bluetooth keyboard makes this more difficult as many off-the-shelf versions of this attack are designed to be plugged in between a USB keyboard and the computer.
 
-To protect against physical theft during use, use an anti-forensic tool such as [buskill/buskill-app](https://github.com/buskill/buskill-app) or [Lennolium/swiftGuard](https://github.com/Lennolium/swiftGuard) (updated usbkill, with graphical user interface). All respond to USB events and can immediately shut the computer down if the device is physically separated or an unauthorized device is connected.
+To reduce the consequences of theft while a Mac is in use, consider using [buskill/buskill-app](https://github.com/buskill/buskill-app) or [Lennolium/swiftGuard](https://github.com/Lennolium/swiftGuard).
 
 Consider purchasing a privacy screen/filter for use in public.
 
@@ -1380,15 +1380,57 @@ Consider purchasing a privacy screen/filter for use in public.
 
 ## Logs
 
-Monitor system logs with [Console](https://support.apple.com/guide/console/toc) or the `/usr/bin/log stream` command.
+Monitor system logs with [Console](https://support.apple.com/guide/console/toc) or the `log stream` command.
 
-To show log entries generated by the `audioaccessoryd` process during the last hour:
+Print all system logs from the last 5 minutes in classic syslog format:
 
 ```bash
-/usr/bin/log show \
-  --last 1h \
-  --predicate 'process == "audioaccessoryd"' \
-  --style compact
+log show --last 5m --style syslog
+```
+
+Output as JSON array:
+
+```bash
+log show --last 5m --style json
+```
+
+Output newline-delimited JSON (one JSON object per line); required for [jq](https://jqlang.org/download/):
+
+```bash
+log show --last 5m --style ndjson
+```
+
+Filter messages by subsystem, for example from `com.apple.SoftwareUpdate`:
+
+```bash
+log show --last 1h --style json \
+  --predicate 'subsystem == "com.apple.SoftwareUpdate"'
+```
+
+Filter messages by content, for example containing `failed`:
+
+```bash
+log show --last 1h --predicate 'eventMessage CONTAINS "failed"'
+```
+
+Case-insensitive message filtering:
+
+```bash
+log show --last 1h --predicate 'eventMessage CONTAINS[c] "error"'
+```
+
+Count distinct error messages with jq:
+
+```bash
+log show --last 1h --style ndjson \
+  --predicate 'eventMessage CONTAINS[c] "error"' |
+  jq -r '.eventMessage' | sort | uniq -c | sort -nr | head -100
+```
+
+Export logs to an archive, which can be opened with Console:
+
+```bash
+log collect --last 1h --output ~/Downloads/logs-$(date +%F-%H%M).logarchive
 ```
 
 ## DTrace
@@ -1421,7 +1463,12 @@ List the contents of various network-related data structures:
 sudo netstat -atln
 ```
 
-[Wireshark](https://www.wireshark.org/) can be used from the command line with `tshark`.
+[Wireshark](https://www.wireshark.org/) can be used from the command line with [`tshark`](https://www.wireshark.org/docs/man-pages/tshark.html).
+
+Replace `en0` with the active interface shown by `networksetup -listallhardwareports`.
+
+> [!IMPORTANT]
+> Capture traffic only on networks and systems you are authorized to monitor.
 
 Monitor DNS:
 
@@ -1479,13 +1526,11 @@ Use [QuickTime Player](https://en.wikipedia.org/wiki/Quicktime_player), the buil
 
 ## File handlers
 
-Manage [default file handlers](https://support.apple.com/guide/mac-help/choose-an-app-to-open-a-file-on-mac-mh35597) to reduce risk of opening dangerous types.
+Manage [default file handlers](https://support.apple.com/guide/mac-help/choose-an-app-to-open-a-file-on-mac-mh35597) to reduce risk of opening certain file types.
 
-Change the default application used to open shell script files.
+Change the default app for script files so that opening them displays their contents instead of executing them.
 
 In Finder, locate and select any .sh file, right-click on it and select Get Info or press <kbd>Command</kbd> + <kbd>I</kbd>. In the "Open with" section, select TextEdit from the dropdown menu. If it is not listed, select "Other..." and Applications > TextEdit.app. Select "Change All..." and confirm by selecting Continue.
-
-From then on, double-clicking any .sh file will open it in TextEdit instead of Terminal.
 
 ## Screensaver
 
@@ -1542,7 +1587,8 @@ Enable [secure keyboard entry](https://support.apple.com/guide/terminal/use-secu
 Disable [Bonjour multicast advertisements](https://www.tenable.com/audits/items/CIS_Apple_macOS_10.13_v1.1.0_Level_2.audit:d9dcee7e4d2b8d2ee54f437158992d88) (this also disables AirPlay and AirPrint features):
 
 ```bash
-sudo defaults write /Library/Preferences/com.apple.mDNSResponder NoMulticastAdvertisements -bool YES
+sudo defaults write /Library/Preferences/com.apple.mDNSResponder \
+  NoMulticastAdvertisements -bool YES
 ```
 
 [Disable Handoff](https://support.apple.com/guide/mac-help/change-airdrop-handoff-settings-mchl6a407f99) and [Bluetooth](https://support.apple.com/guide/mac-help/turn-bluetooth-on-or-off-blth1008) features.
@@ -1574,12 +1620,13 @@ Software | Category | Description
 
 # Additional resources
 
-- [Apple Open Source](https://opensource.apple.com/)
 - [iCloud security and privacy overview](https://support.apple.com/102651)
 - [EFF Surveillance Self-Defense Guide](https://ssd.eff.org/)
+- [beerisgood/macOS_Hardening](https://github.com/beerisgood/macOS_Hardening)
 - [Reverse Engineering macOS blog](https://reverse.put.as/)
 - [Reverse Engineering Resources](http://samdmarshall.com/re.html)
 - [Malwarebytes Blog](https://www.malwarebytes.com/blog)
 - [Objective-See's Blog](https://objective-see.com/blog.html)
 - [CIS Benchmarks](https://www.cisecurity.org/benchmark/apple_os/)
+- [Apple Open Source](https://opensource.apple.com/)
 - [iOS, The Future Of macOS, Freedom, Security And Privacy In An Increasingly Hostile Global Environment](https://gist.github.com/iosecure/357e724811fe04167332ef54e736670d)

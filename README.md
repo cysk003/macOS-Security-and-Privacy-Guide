@@ -5,7 +5,7 @@ For organization-managed Macs, see the [macOS Security Compliance Project](https
 This guide is provided "as is" - without warranties of any kind. You are solely responsible for any consequences of following it.
 
 - [Basics](#basics)
-- [Threat modeling](#threat-modeling)
+- [Threat model](#threat-model)
   - [Assets](#assets)
   - [Adversaries](#adversaries)
   - [Capabilities](#capabilities)
@@ -81,6 +81,15 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
   - [Network](#network)
     - [Wireshark](#wireshark)
 - [Miscellaneous](#miscellaneous)
+    - [Screensaver](#screensaver)
+    - [Diagnostic data](#diagnostic-data)
+    - [Media player](#media-player)
+    - [File handlers](#file-handlers)
+    - [Finder options](#finder-options)
+    - [Custom umask](#custom-umask)
+    - [Keyboard entry](#keyboard-entry)
+    - [Network hardening](#network-hardening)
+    - [Sudoers](#sudoers)
 - [Related software](#related-software)
 - [Additional resources](#additional-resources)
 
@@ -90,7 +99,7 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
 
 Apply general security best practices:
 
-- Create a [threat model](#threat-modeling)
+- Create a [threat model](#threat-model)
   - Is your adversary a local eavesdropper, a criminal using common malware, or a well-funded and highly capable organization?
   - Define the threats or groups you are defending against and what they can realistically do.
 
@@ -112,7 +121,7 @@ Apply general security best practices:
   - Ultimately, the security of a system depends on the capabilities and habits of its administrator.
   - Take care when installing new software: install it only from sources the developer identifies as official, such as their website or GitHub repository.
 
-# Threat modeling
+# Threat model
 
 The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling): a general description of what you want to protect, who might try to access it, how they could do so, and which controls are worth usability trade-offs. This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses.
 
@@ -1500,7 +1509,7 @@ Monitor HTTP:
   -Eseparator=/s
 ```
 
-Monitor x509/TLS certificates:
+Monitor TLS certificates:
 
 ```bash
 /Applications/Wireshark.app/Contents/MacOS/tshark -i en0 \
@@ -1515,6 +1524,15 @@ Monitor x509/TLS certificates:
 ```
 
 # Miscellaneous
+
+## Screensaver
+
+Set the screen to lock as soon as the screensaver starts:
+
+```bash
+defaults write com.apple.screensaver askForPassword -int 1
+defaults write com.apple.screensaver askForPasswordDelay -int 0
+```
 
 ## Diagnostic data
 
@@ -1538,15 +1556,6 @@ Change the default app for script files so that opening them displays their cont
 
 In Finder, locate and select any .sh file, right-click on it and select Get Info or press <kbd>Command</kbd> + <kbd>I</kbd>. In the "Open with" section, select TextEdit from the dropdown menu. If it is not listed, select "Other..." and Applications > TextEdit.app. Select "Change All..." and confirm by selecting Continue.
 
-## Screensaver
-
-Set the screen to lock as soon as the screensaver starts:
-
-```bash
-defaults write com.apple.screensaver askForPassword -int 1
-defaults write com.apple.screensaver askForPasswordDelay -int 0
-```
-
 ## Finder options
 
 Show hidden files and the Library folder in Finder:
@@ -1568,7 +1577,7 @@ Do not default to saving documents to iCloud:
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 ```
 
-## umask
+## Custom umask
 
 Set a [custom umask](https://support.apple.com/101914):
 
@@ -1588,7 +1597,7 @@ drwx------@ 2 user1 staff  64 Jul 26 12:00 umask.dir
 
 Enable [secure keyboard entry](https://support.apple.com/guide/terminal/use-secure-keyboard-entry-trml109) in Terminal (this may interfere with applications such as [TextExpander](https://smilesoftware.com/textexpander/secure-input)).
 
-## Networking
+## Network hardening
 
 Disable [Bonjour multicast advertisements](https://www.tenable.com/audits/items/CIS_Apple_macOS_10.13_v1.1.0_Level_2.audit:d9dcee7e4d2b8d2ee54f437158992d88) (this also disables AirPlay and AirPrint features):
 

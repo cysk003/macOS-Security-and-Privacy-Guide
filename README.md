@@ -573,10 +573,10 @@ brew install dnscrypt-proxy
 When using DNSCrypt with Dnsmasq, locate the DNSCrypt configuration file by running:
 
 ```bash
-brew info dnscrypt-proxy
+brew info dnscrypt-proxy | grep dnscrypt-proxy.toml | head -1
 ```
 
-This command should display a path such as `/usr/local/etc/dnscrypt-proxy.toml`.
+This command should display a path such as `/opt/homebrew/etc/dnscrypt-proxy.toml`.
 
 By default, dnscrypt-proxy listens on `127.0.0.1:53` and sends queries to one or more configured DNS providers. Modify the configuration and change `listen_addresses` to use a port other than 53, such as 5355:
 
@@ -718,6 +718,9 @@ $ scutil --proxy
   HTTPEnable : 1
   HTTPPort : 8118
   HTTPProxy : 127.0.0.1
+  HTTPSEnable : 1
+  HTTPSPort : 8118
+  HTTPSProxy : 127.0.0.1
 }
 ```
 
@@ -1065,10 +1068,12 @@ Applications from the App Store or [notarized by Apple](https://support.apple.co
 Check if a program uses [App Sandbox](https://developer.apple.com/documentation/security/app_sandbox/protecting_user_data_with_app_sandbox):
 
 ```bash
-codesign -dvvv --entitlements - /path/to/application.app
+codesign --display --entitlements - \
+  /System/Applications/Calculator.app 2>&1 |
+    grep -A2 com.apple.security.app-sandbox
 ```
 
-With App Sandbox enabled, output will include:
+With App Sandbox enabled, output should be:
 
 ```console
 [Key] com.apple.security.app-sandbox
@@ -1090,7 +1095,7 @@ App Store software is required to use App Sandbox. Applications such as Google C
 
 ## Hardened Runtime
 
-Check if a program uses the [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime) before running it using the command:
+Check if an application uses [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime):
 
 ```bash
 codesign --display --verbose /path/to/application.app
@@ -1098,9 +1103,19 @@ codesign --display --verbose /path/to/application.app
 
 If Hardened Runtime is enabled, `flags=0x10000(runtime)` will appear in output.
 
+List all applications with this feature enabled:
+
+```bash
+for app in /Applications/*.app /System/Applications/*.app; do
+  if codesign -dvv "$app" 2>&1 | grep -q 'flags=0x10000(runtime)'; then
+    echo "$app"
+  fi
+done
+```
+
 **Activity Monitor** has the option to display a "Restricted" column which indicates a program is restricted from injecting code via macOS's [dynamic linker](https://pewpewthespells.com/blog/blocking_code_injection_on_ios_and_os_x.html).
 
-The Hardened Runtime is a prerequisite for notarization of distributed apps.
+Hardened Runtime is a prerequisite for notarization of distributed apps.
 
 ## Antivirus
 

@@ -900,10 +900,10 @@ hdiutil mount tor-browser-macos-15.0.17.dmg
 cp -r /Volumes/Tor\ Browser/Tor\ Browser.app/ ~/Applications/
 ```
 
-Verify the application was signed by The Tor Project's Apple Developer ID `MADPSAYN6T` using the `spctl -a -v` or `pkgutil --check-signature` commands:
+Verify the application was signed by The Tor Project's Apple Developer ID (`MADPSAYN6T`):
 
 ```console
-$ spctl -a -vv ~/Applications/Tor\ Browser.app
+$ spctl --assess -vv ~/Applications/Tor\ Browser.app
 /Users/user1/Applications/Tor Browser.app: accepted
 source=Notarized Developer ID
 origin=Developer ID Application: The Tor Project, Inc (MADPSAYN6T)
@@ -1134,6 +1134,12 @@ See [Sophail: Applied attacks against Antivirus](https://lock.cmpxchg8b.com/soph
 [Gatekeeper](https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web) verifies software notarization and provenance.
 
 Gatekeeper warns when opening an application without notarization. It can be bypassed by selecting the application listed in **System Settings** > **Privacy & Security** after a failed attempt.
+
+Check if Gatekeeper is enabled:
+
+```bash
+spctl --status
+```
 
 # System Integrity Protection
 

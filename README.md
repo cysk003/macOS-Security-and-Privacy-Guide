@@ -5,7 +5,7 @@ For organization-managed Macs, see the [macOS Security Compliance Project](https
 This guide is provided "as is" - without warranties of any kind. You are solely responsible for any consequences of following it.
 
 - [Basics](#basics)
-- [Threat modeling](#threat-modeling)
+- [Threat model](#threat-model)
   - [Assets](#assets)
   - [Adversaries](#adversaries)
   - [Capabilities](#capabilities)
@@ -61,7 +61,7 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
   - [XMPP](#xmpp)
   - [Signal](#signal)
   - [iMessage](#imessage)
-- [Viruses and malware](#viruses-and-malware)
+- [Malware](#Malware)
   - [Downloading Software](#downloading-software)
   - [App Sandbox](#app-sandbox)
   - [Hardened Runtime](#hardened-runtime)
@@ -79,7 +79,17 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
   - [DTrace](#dtrace)
   - [Processes](#processes)
   - [Network](#network)
+    - [Wireshark](#wireshark)
 - [Miscellaneous](#miscellaneous)
+    - [Screensaver](#screensaver)
+    - [Diagnostic data](#diagnostic-data)
+    - [Media player](#media-player)
+    - [File handlers](#file-handlers)
+    - [Finder options](#finder-options)
+    - [Custom umask](#custom-umask)
+    - [Keyboard entry](#keyboard-entry)
+    - [Network hardening](#network-hardening)
+    - [Sudoers](#sudoers)
 - [Related software](#related-software)
 - [Additional resources](#additional-resources)
 
@@ -89,7 +99,7 @@ This guide is provided "as is" - without warranties of any kind. You are solely 
 
 Apply general security best practices:
 
-- Create a [threat model](#threat-modeling)
+- Create a [threat model](#threat-model)
   - Is your adversary a local eavesdropper, a criminal using common malware, or a well-funded and highly capable organization?
   - Define the threats or groups you are defending against and what they can realistically do.
 
@@ -111,7 +121,7 @@ Apply general security best practices:
   - Ultimately, the security of a system depends on the capabilities and habits of its administrator.
   - Take care when installing new software: install it only from sources the developer identifies as official, such as their website or GitHub repository.
 
-# Threat modeling
+# Threat model
 
 The most important step to meaningfully improve security and privacy is to create a [threat model](https://owasp.org/www-community/Threat_Modeling): a general description of what you want to protect, who might try to access it, how they could do so, and which controls are worth usability trade-offs. This creates an understanding of potential adversaries and their motivations, which leads to stronger defenses.
 
@@ -277,16 +287,19 @@ There are several types of firewalls available for macOS.
 
 The built-in firewall provides basic protection and blocks incoming connections only. It can neither monitor nor block outgoing connections.
 
-It can be controlled by the **Firewall** tab of **Network** in **System Settings**, or with the following commands.
-
-Attackers frequently scan networks to identify systems to target. When [stealth mode](https://support.apple.com/guide/mac-help/use-stealth-mode-to-keep-your-mac-more-secure-mh17133/mac) is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
-
-### Stealth mode
-
-Enable the firewall and stealth mode:
+It can be controlled by the **Firewall** tab of **Network** in **System Settings**, or with the following command:
 
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
+```
+
+### Stealth mode
+
+Attackers frequently scan networks to identify systems to target. When [stealth mode](https://support.apple.com/guide/mac-help/use-stealth-mode-to-keep-your-mac-more-secure-mh17133/mac) is enabled, responses are not sent to connection attempts from closed ports, making the system more difficult to detect.
+
+Enable stealth mode:
+
+```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 ```
 
@@ -324,13 +337,13 @@ done
 
 ### AirDrop
 
-Enabling the application layer firewall and disabling incoming connections for built-in software prevents [AirDrop](https://support.apple.com/119857) from functioning correctly. For AirDrop to work, both `sharingd` and `rapportd` require firewall exceptions:
+Enabling the application layer firewall and disabling incoming connections for built-in software prevents [AirDrop](https://support.apple.com/119857) from functioning. For AirDrop to work, grant `sharingd` and `rapportd` firewall exceptions:
 
 ```bash
-sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/sharingd
-sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /usr/libexec/sharingd
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/rapportd
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/sharingd
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /usr/libexec/rapportd
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /usr/libexec/sharingd
 ```
 
 ## Third-party firewalls
@@ -560,10 +573,10 @@ brew install dnscrypt-proxy
 When using DNSCrypt with Dnsmasq, locate the DNSCrypt configuration file by running:
 
 ```bash
-brew info dnscrypt-proxy
+brew info dnscrypt-proxy | grep dnscrypt-proxy.toml | head -1
 ```
 
-This command should display a path such as `/usr/local/etc/dnscrypt-proxy.toml`.
+This command should display a path such as `/opt/homebrew/etc/dnscrypt-proxy.toml`.
 
 By default, dnscrypt-proxy listens on `127.0.0.1:53` and sends queries to one or more configured DNS providers. Modify the configuration and change `listen_addresses` to use a port other than 53, such as 5355:
 
@@ -705,6 +718,9 @@ $ scutil --proxy
   HTTPEnable : 1
   HTTPPort : 8118
   HTTPProxy : 127.0.0.1
+  HTTPSEnable : 1
+  HTTPSPort : 8118
+  HTTPSProxy : 127.0.0.1
 }
 ```
 
@@ -884,10 +900,10 @@ hdiutil mount tor-browser-macos-15.0.17.dmg
 cp -r /Volumes/Tor\ Browser/Tor\ Browser.app/ ~/Applications/
 ```
 
-Verify the application was signed by The Tor Project's Apple Developer ID `MADPSAYN6T` using the `spctl -a -v` or `pkgutil --check-signature` commands:
+Verify the application was signed by The Tor Project's Apple Developer ID (`MADPSAYN6T`):
 
 ```console
-$ spctl -a -vv ~/Applications/Tor\ Browser.app
+$ spctl --assess -vv ~/Applications/Tor\ Browser.app
 /Users/user1/Applications/Tor Browser.app: accepted
 source=Notarized Developer ID
 origin=Developer ID Application: The Tor Project, Inc (MADPSAYN6T)
@@ -1035,7 +1051,7 @@ iMessage can be used with either a [phone number or an email](https://support.ap
 > [!WARNING]
 > By default, iCloud backup is enabled, which stores copies of message encryption keys on [Apple's servers](https://support.apple.com/102651) without E2EE. Either [disable iCloud backup](https://support.apple.com/guide/icloud/view-and-manage-backups-mm122d3ef202/1.0/icloud/1.0) or enable [Advanced Data Protection](https://support.apple.com/guide/security/advanced-data-protection-for-icloud-sec973254c5f) to prevent this. Remind messaging recipients to do the same.
 
-# Viruses and malware
+# Malware
 
 See [Methods of malware persistence on Mac OS X](https://www.virusbtn.com/pdf/conference/vb2014/VB2014-Wardle.pdf) and [Malware Persistence on OS X Yosemite](https://www.rsaconference.com/events/us15/agenda/sessions/1591/malware-persistence-on-os-x-yosemite) to learn how common macOS malware persists.
 
@@ -1052,10 +1068,12 @@ Applications from the App Store or [notarized by Apple](https://support.apple.co
 Check if a program uses [App Sandbox](https://developer.apple.com/documentation/security/app_sandbox/protecting_user_data_with_app_sandbox):
 
 ```bash
-codesign -dvvv --entitlements - /path/to/application.app
+codesign --display --entitlements - \
+  /System/Applications/Calculator.app 2>&1 |
+    grep -A2 com.apple.security.app-sandbox
 ```
 
-With App Sandbox enabled, output will include:
+With App Sandbox enabled, output should be:
 
 ```console
 [Key] com.apple.security.app-sandbox
@@ -1077,7 +1095,7 @@ App Store software is required to use App Sandbox. Applications such as Google C
 
 ## Hardened Runtime
 
-Check if a program uses the [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime) before running it using the command:
+Check if an application uses [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime):
 
 ```bash
 codesign --display --verbose /path/to/application.app
@@ -1085,9 +1103,19 @@ codesign --display --verbose /path/to/application.app
 
 If Hardened Runtime is enabled, `flags=0x10000(runtime)` will appear in output.
 
+List all applications with this feature enabled:
+
+```bash
+for app in /Applications/*.app /System/Applications/*.app; do
+  if codesign -dvv "$app" 2>&1 | grep -q 'flags=0x10000(runtime)'; then
+    echo "$app"
+  fi
+done
+```
+
 **Activity Monitor** has the option to display a "Restricted" column which indicates a program is restricted from injecting code via macOS's [dynamic linker](https://pewpewthespells.com/blog/blocking_code_injection_on_ios_and_os_x.html).
 
-The Hardened Runtime is a prerequisite for notarization of distributed apps.
+Hardened Runtime is a prerequisite for notarization of distributed apps.
 
 ## Antivirus
 
@@ -1107,6 +1135,12 @@ See [Sophail: Applied attacks against Antivirus](https://lock.cmpxchg8b.com/soph
 
 Gatekeeper warns when opening an application without notarization. It can be bypassed by selecting the application listed in **System Settings** > **Privacy & Security** after a failed attempt.
 
+Check if Gatekeeper is enabled:
+
+```bash
+spctl --status
+```
+
 # System Integrity Protection
 
 To verify System Integrity Protection is enabled, use the command `csrutil status`, which should return: `System Integrity Protection status: enabled.` Otherwise, [enable SIP](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection) using [Recovery Mode](https://support.apple.com/102518).
@@ -1121,70 +1155,70 @@ Other metadata and artifacts may be found in the directories including, but not 
 
 `~/Library/Preferences/com.apple.sidebarlists.plist` contains historical list of volumes attached. To clear it, use the command `/usr/libexec/PlistBuddy -c "delete :systemitems:VolumesList" ~/Library/Preferences/com.apple.sidebarlists.plist`
 
-`/Library/Preferences/com.apple.Bluetooth.plist` contains Bluetooth metadata, including device history. If Bluetooth is not used, the metadata can be cleared with:
+`/Library/Preferences/com.apple.Bluetooth.plist` contains Bluetooth metadata, including device history. If Bluetooth is not used, the metadata can be listed with:
 
 ```bash
-sudo defaults delete /Library/Preferences/com.apple.Bluetooth.plist DeviceCache
-sudo defaults delete /Library/Preferences/com.apple.Bluetooth.plist IDSPairedDevices
-sudo defaults delete /Library/Preferences/com.apple.Bluetooth.plist PANDevices
-sudo defaults delete /Library/Preferences/com.apple.Bluetooth.plist PANInterfaces
-sudo defaults delete /Library/Preferences/com.apple.Bluetooth.plist SCOAudioDevices
+sudo defaults read /Library/Preferences/com.apple.Bluetooth.plist DeviceCache
+sudo defaults read /Library/Preferences/com.apple.Bluetooth.plist IDSPairedDevices
+sudo defaults read /Library/Preferences/com.apple.Bluetooth.plist PANDevices
+sudo defaults read /Library/Preferences/com.apple.Bluetooth.plist PANInterfaces
+sudo defaults read /Library/Preferences/com.apple.Bluetooth.plist SCOAudioDevices
 ```
 
-`/var/spool/cups` contains the CUPS printer job cache. To clear it, use the commands:
+`/var/spool/cups` contains the CUPS printer job cache. To list it, use the commands:
 
 ```bash
-sudo rm -rfv /var/spool/cups/c0*
-sudo rm -rfv /var/spool/cups/tmp/*
-sudo rm -rfv /var/spool/cups/cache/job.cache*
+sudo ls -rfv /var/spool/cups/c0*
+sudo ls -rfv /var/spool/cups/tmp/*
+sudo ls -rfv /var/spool/cups/cache/job.cache*
 ```
 
-To clear the list of iOS devices connected, use:
+To list the list of iOS devices connected, use:
 
 ```bash
-sudo defaults delete /Users/$USER/Library/Preferences/com.apple.iPod.plist "conn:128:Last Connect"
-sudo defaults delete /Users/$USER/Library/Preferences/com.apple.iPod.plist Devices
-sudo defaults delete /Library/Preferences/com.apple.iPod.plist "conn:128:Last Connect"
-sudo defaults delete /Library/Preferences/com.apple.iPod.plist Devices
-sudo rm -rfv /var/db/lockdown/*
+sudo defaults read /Users/$USER/Library/Preferences/com.apple.iPod.plist "conn:128:Last Connect"
+sudo defaults read /Users/$USER/Library/Preferences/com.apple.iPod.plist Devices
+sudo defaults read /Library/Preferences/com.apple.iPod.plist "conn:128:Last Connect"
+sudo defaults read /Library/Preferences/com.apple.iPod.plist Devices
+sudo ls -rfv /var/db/lockdown/*
 ```
 
-Quicklook thumbnail data can be cleared using the `qlmanage -r cache` command, but this writes to the file `resetreason` in the Quicklook directories, and states that the Quicklook cache was manually cleared. Disable the thumbnail cache with `qlmanage -r disablecache`
+Quicklook thumbnail data can be cleared using the `qlmanage -r cache` command, but this writes to the file `resetreason` in the Quicklook directories, and states that the Quicklook cache was manually cleared. Disable the thumbnail cache with `qlmanage -r disablecache`.
 
-It can also be cleared by getting the directory names with `getconf DARWIN_USER_CACHE_DIR` and `sudo getconf DARWIN_USER_CACHE_DIR`, then removing them:
+It can also be listed by getting the directory names as follows:
 
 ```bash
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/exclusive
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-shm
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-wal
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/resetreason
-rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.data
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/exclusive
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-shm
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-wal
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/resetreason
+ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.data
 ```
 
 Similarly, for the root user:
 
 ```bash
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.fraghandler
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/exclusive
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-shm
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-wal
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/resetreason
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.data
-sudo rm -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.fraghandler
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.fraghandler
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/exclusive
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-shm
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/index.sqlite-wal
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/resetreason
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.data
+sudo ls -rfv $(getconf DARWIN_USER_CACHE_DIR)/com.apple.QuickLook.thumbnailcache/thumbnails.fraghandler
 ```
 
 Also see ['quicklook' cache may leak encrypted data](https://objective-see.com/blog/blog_0x30.html).
 
-To clear Finder preferences:
+To read Finder preferences:
 
 ```bash
-defaults delete ~/Library/Preferences/com.apple.finder.plist FXDesktopVolumePositions
-defaults delete ~/Library/Preferences/com.apple.finder.plist FXRecentFolders
-defaults delete ~/Library/Preferences/com.apple.finder.plist RecentMoveAndCopyDestinations
-defaults delete ~/Library/Preferences/com.apple.finder.plist RecentSearches
-defaults delete ~/Library/Preferences/com.apple.finder.plist SGTRecentFileSearches
+defaults read ~/Library/Preferences/com.apple.finder.plist FXDesktopVolumePositions
+defaults read ~/Library/Preferences/com.apple.finder.plist FXRecentFolders
+defaults read ~/Library/Preferences/com.apple.finder.plist RecentMoveAndCopyDestinations
+defaults read ~/Library/Preferences/com.apple.finder.plist RecentSearches
+defaults read ~/Library/Preferences/com.apple.finder.plist SGTRecentFileSearches
 ```
 
 Additional diagnostic files may be found in the following directories - but caution should be taken before removing any, as it may break logging or cause other issues:
@@ -1205,10 +1239,10 @@ chmod -R 000 ~/Library/LanguageModeling ~/Library/Spelling ~/Library/Suggestions
 chflags -R uchg ~/Library/LanguageModeling ~/Library/Spelling ~/Library/Suggestions
 ```
 
-QuickLook application support metadata can be cleared and locked with the commands:
+QuickLook application support metadata can be listed and locked with the commands:
 
 ```bash
-rm -rfv "$HOME/Library/Application Support/Quick Look/*"
+ls -rfv "$HOME/Library/Application Support/Quick Look/*"
 chmod -R 000 "$HOME/Library/Application Support/Quick Look"
 chflags -R uchg "$HOME/Library/Application Support/Quick Look"
 ```
@@ -1216,10 +1250,10 @@ chflags -R uchg "$HOME/Library/Application Support/Quick Look"
 > [!WARNING]
 > Clearing or locking this directory can break core macOS applications and prevent document-version recovery.
 
-Document revision metadata can be cleared and disabled with the commands:
+Document revision metadata can be listed and disabled with the commands:
 
 ```bash
-sudo rm -rfv /.DocumentRevisions-V100/*
+sudo ls -rfv /.DocumentRevisions-V100/*
 sudo chmod -R 000 /.DocumentRevisions-V100
 sudo chflags -R uchg /.DocumentRevisions-V100
 ```
@@ -1246,10 +1280,10 @@ chflags -R uchg "~/Library/Containers/<APP>/Data/Library/Autosave Information"
 chflags -R uchg "~/Library/Autosave Information"
 ```
 
-The Siri analytics database, which is created even if the Siri launch agent is disabled, can be cleared and locked with the commands:
+The Siri analytics database, which is created even if the Siri launch agent is disabled, can be listed and locked with the commands:
 
 ```bash
-rm -rfv ~/Library/Assistant/SiriAnalytics.db
+ls -rfv ~/Library/Assistant/SiriAnalytics.db
 chmod -R 000 ~/Library/Assistant/SiriAnalytics.db
 chflags -R uchg ~/Library/Assistant/SiriAnalytics.db
 ```
@@ -1463,6 +1497,8 @@ List the contents of various network-related data structures:
 sudo netstat -atln
 ```
 
+### Wireshark
+
 [Wireshark](https://www.wireshark.org/) can be used from the command line with [`tshark`](https://www.wireshark.org/docs/man-pages/tshark.html).
 
 Replace `en0` with the active interface shown by `networksetup -listallhardwareports`.
@@ -1494,7 +1530,7 @@ Monitor HTTP:
   -Eseparator=/s
 ```
 
-Monitor x509/TLS certificates:
+Monitor TLS certificates:
 
 ```bash
 /Applications/Wireshark.app/Contents/MacOS/tshark -i en0 \
@@ -1509,6 +1545,15 @@ Monitor x509/TLS certificates:
 ```
 
 # Miscellaneous
+
+## Screensaver
+
+Set the screen to lock as soon as the screensaver starts:
+
+```bash
+defaults write com.apple.screensaver askForPassword -int 1
+defaults write com.apple.screensaver askForPasswordDelay -int 0
+```
 
 ## Diagnostic data
 
@@ -1532,15 +1577,6 @@ Change the default app for script files so that opening them displays their cont
 
 In Finder, locate and select any .sh file, right-click on it and select Get Info or press <kbd>Command</kbd> + <kbd>I</kbd>. In the "Open with" section, select TextEdit from the dropdown menu. If it is not listed, select "Other..." and Applications > TextEdit.app. Select "Change All..." and confirm by selecting Continue.
 
-## Screensaver
-
-Set the screen to lock as soon as the screensaver starts:
-
-```bash
-defaults write com.apple.screensaver askForPassword -int 1
-defaults write com.apple.screensaver askForPasswordDelay -int 0
-```
-
 ## Finder options
 
 Show hidden files and the Library folder in Finder:
@@ -1562,7 +1598,7 @@ Do not default to saving documents to iCloud:
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 ```
 
-## umask
+## Custom umask
 
 Set a [custom umask](https://support.apple.com/101914):
 
@@ -1582,7 +1618,7 @@ drwx------@ 2 user1 staff  64 Jul 26 12:00 umask.dir
 
 Enable [secure keyboard entry](https://support.apple.com/guide/terminal/use-secure-keyboard-entry-trml109) in Terminal (this may interfere with applications such as [TextExpander](https://smilesoftware.com/textexpander/secure-input)).
 
-## Networking
+## Network hardening
 
 Disable [Bonjour multicast advertisements](https://www.tenable.com/audits/items/CIS_Apple_macOS_10.13_v1.1.0_Level_2.audit:d9dcee7e4d2b8d2ee54f437158992d88) (this also disables AirPlay and AirPrint features):
 
